@@ -20,6 +20,7 @@ const attendanceRoutes = require("./routes/attendanceRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
+const { getUploadBaseDir } = require("./utils/uploadPaths");
 const { initializeSocket } = require("./socket");
 const { broadcastSeatState } = require("./utils/realtime");
 const { calculateTotalHours } = require("./utils/attendance");
@@ -67,7 +68,7 @@ app.use("/api", (req, res, next) => {
   res.setHeader("Expires", "0");
   next();
 });
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/uploads", express.static(getUploadBaseDir()));
 
 app.get("/api/health", (req, res) => {
   res.json({ success: true, message: "Library API is running" });

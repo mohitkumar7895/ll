@@ -8,12 +8,13 @@ const FaceAttendance = require("../models/FaceAttendance");
 const Payment = require("../models/Payment");
 const Seat = require("../models/Seat");
 const { broadcastSeatState } = require("../utils/realtime");
+const { resolveUploadFilePath } = require("../utils/uploadPaths");
 
 const unlinkProfilePhoto = (photoPath) => {
-  if (!photoPath || typeof photoPath !== "string" || !photoPath.startsWith("/uploads/")) {
+  const filePath = resolveUploadFilePath(photoPath);
+  if (!filePath) {
     return;
   }
-  const filePath = path.join(__dirname, "..", photoPath.replace(/^\//, ""));
   fs.unlink(filePath, () => {});
 };
 

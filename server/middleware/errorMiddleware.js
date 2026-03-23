@@ -1,12 +1,15 @@
-const notFound = (req, res, next) => {
-  const error = new Error(`Route not found: ${req.originalUrl}`);
-  res.status(404);
-  next(error);
+const notFound = (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: `Route not found: ${req.originalUrl}`,
+  });
 };
 
 const errorHandler = (err, req, res, next) => {
   const statusCode = res.statusCode && res.statusCode !== 200 ? res.statusCode : 500;
-  console.error("Unhandled error:", err.stack || err.message);
+  if (statusCode >= 500) {
+    console.error("Unhandled error:", err.stack || err.message);
+  }
 
   res.status(statusCode).json({
     success: false,

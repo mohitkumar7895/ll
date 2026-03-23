@@ -1,4 +1,5 @@
 const path = require("path");
+const fs = require("fs");
 const http = require("http");
 const express = require("express");
 const cors = require("cors");
@@ -81,6 +82,59 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/payments", paymentRoutes);
+
+/** Browsers hit these on the API host; avoid 404 spam in logs (Vercel / serverless). */
+app.get(["/favicon.ico", "/favicon.png"], (_req, res) => {
+  res.status(204).end();
+});
+
+const faviconSvgCandidates = [
+  path.join(__dirname, "..", "client", "public", "favicon.svg"),
+  path.join(__dirname, "..", "client", "dist", "favicon.svg"),
+];
+app.get("/favicon.svg", (req, res) => {
+  const found = faviconSvgCandidates.find((p) => fs.existsSync(p));
+  if (found) {
+    res.type("image/svg+xml");
+    return res.sendFile(path.resolve(found));
+  }
+  res.status(204).end();
+});
+
+/**
+ * Root URL on API-only deployments (e.g. Vercel server): redirect to frontend if CLIENT_URL is set.
+ */
+app.get("/", (req, res) => {
+  const clientBase = (process.env.CLIENT_URL || "").trim().replace(/\/$/, "");
+  if (clientBase) {
+    return res.redirect(302, clientBase + "/");
+  }
+  return res.status(200).json({
+    success: true,
+    service: "Library Hub API",
+    health: "/api/health",
+    hint: "Open your Vite app URL for the UI. Set CLIENT_URL in env to redirect this root to the frontend.",
+  });
+});
+
+/** Optional: serve built SPA from ../client/dist when present (same-origin deploy). */
+const clientDist = path.join(__dirname, "..", "client", "dist");
+if (fs.existsSync(path.join(clientDist, "index.html"))) {
+  app.use(express.static(clientDist));
+  app.use((req, res, next) => {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      return next();
+    }
+    if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
+      return next();
+    }
+    res.sendFile(path.join(clientDist, "index.html"), (err) => {
+      if (err) {
+        next(err);
+      }
+    });
+  });
+}
 
 app.use(notFound);
 app.use(errorHandler);

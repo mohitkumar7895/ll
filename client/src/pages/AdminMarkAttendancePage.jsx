@@ -8,21 +8,12 @@ import { loadFaceModels, faceapi } from "../utils/faceApiModels";
 import { fetchStudentFaceToday, fetchStudents, markFaceAttendanceAsAdmin } from "../services/libraryService";
 import { waitForVideoReady } from "../utils/videoReady";
 import { useTinyFaceDetectorOptions } from "../hooks/useTinyFaceDetectorOptions";
+import { resolvePublicAssetUrl } from "../utils/assetUrl";
 
 const yieldToMain = () =>
   new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(resolve));
   });
-
-const absoluteUrl = (path) => {
-  if (!path) {
-    return "";
-  }
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
-  }
-  return `${window.location.origin}${path.startsWith("/") ? path : "/" + path}`;
-};
 
 const AdminMarkAttendancePage = () => {
   const videoRef = useRef(null);
@@ -117,7 +108,7 @@ const AdminMarkAttendancePage = () => {
       setRefStatus("loading");
       try {
         await yieldToMain();
-        const url = absoluteUrl(photoPath);
+        const url = resolvePublicAssetUrl(photoPath);
         const img = await faceapi.fetchImage(url);
         const det = await faceapi.detectSingleFace(img, tinyOptions).withFaceLandmarks().withFaceDescriptor();
         if (cancelled) {

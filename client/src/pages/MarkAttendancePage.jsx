@@ -10,22 +10,13 @@ import { useAuth } from "../context/useAuth";
 import { getTodayDateString } from "../utils/format";
 import { waitForVideoReady } from "../utils/videoReady";
 import { useTinyFaceDetectorOptions } from "../hooks/useTinyFaceDetectorOptions";
+import { resolvePublicAssetUrl } from "../utils/assetUrl";
 
 /** Yield so the browser can paint / process camera frames before heavy TF work. */
 const yieldToMain = () =>
   new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(resolve));
   });
-
-const absoluteUrl = (path) => {
-  if (!path) {
-    return "";
-  }
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
-  }
-  return `${window.location.origin}${path.startsWith("/") ? path : "/" + path}`;
-};
 
 const MarkAttendancePage = () => {
   const { user, refreshUser } = useAuth();
@@ -98,7 +89,7 @@ const MarkAttendancePage = () => {
       setRefStatus("loading");
       try {
         await yieldToMain();
-        const url = absoluteUrl(photoPath);
+        const url = resolvePublicAssetUrl(photoPath);
         const img = await faceapi.fetchImage(url);
         const det = await faceapi.detectSingleFace(img, tinyOptions).withFaceLandmarks().withFaceDescriptor();
         if (cancelled) {

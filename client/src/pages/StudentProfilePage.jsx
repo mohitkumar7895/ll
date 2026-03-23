@@ -4,19 +4,10 @@ import toast from "react-hot-toast";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { updateMyStudentProfile } from "../services/libraryService";
 import { useAuth } from "../context/useAuth";
+import { resolvePublicAssetUrl } from "../utils/assetUrl";
 
 const inputClass =
   "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 max-lg:shadow-sm max-lg:shadow-slate-200/40 lg:shadow-none";
-
-const absoluteUrl = (path) => {
-  if (!path) {
-    return "";
-  }
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
-  }
-  return `${window.location.origin}${path.startsWith("/") ? path : "/" + path}`;
-};
 
 const StudentProfilePage = () => {
   const { user, refreshUser } = useAuth();
@@ -96,7 +87,7 @@ const StudentProfilePage = () => {
     return () => URL.revokeObjectURL(url);
   }, [form.profileImage]);
 
-  const previewUrl = useMemo(() => filePreviewUrl || absoluteUrl(photoPath), [filePreviewUrl, photoPath]);
+  const previewUrl = useMemo(() => filePreviewUrl || resolvePublicAssetUrl(photoPath), [filePreviewUrl, photoPath]);
 
   return (
     <DashboardLayout

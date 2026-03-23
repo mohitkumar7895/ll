@@ -4,6 +4,7 @@ let io;
 
 const initializeSocket = (httpServer) => {
   const allowedOrigins = [
+    "https://ll-blue-xi.vercel.app",
     "http://localhost:5173",
     "http://localhost:5174",
     "http://127.0.0.1:5173",
@@ -12,7 +13,10 @@ const initializeSocket = (httpServer) => {
     "https://localhost:5174",
     "https://127.0.0.1:5173",
     "https://127.0.0.1:5174",
-    ...((process.env.CLIENT_URL || "").split(",").map((origin) => origin.trim()).filter(Boolean)),
+    ...((process.env.CLIENT_URL || "")
+      .split(",")
+      .map((origin) => origin.trim().replace(/\/$/, ""))
+      .filter(Boolean)),
   ];
 
   io = new Server(httpServer, {

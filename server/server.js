@@ -33,7 +33,15 @@ const server = http.createServer(app);
 initializeSocket(server);
 app.disable("etag");
 
-const allowedOrigins = [
+/** Strip trailing slash so origins match the browser-sent Origin header exactly. */
+const normalizeOrigin = (value) => String(value || "").trim().replace(/\/$/, "");
+
+/**
+ * Production frontend (Vercel) + local dev. Merge CLIENT_URL from env (comma-separated).
+ * Only listed origins receive Access-Control-Allow-Origin when credentials: true.
+ */
+const defaultAllowedOrigins = [
+  "https://ll-blue-xi.vercel.app",
   "http://localhost:5173",
   "http://localhost:5174",
   "http://127.0.0.1:5173",
@@ -42,25 +50,37 @@ const allowedOrigins = [
   "https://localhost:5174",
   "https://127.0.0.1:5173",
   "https://127.0.0.1:5174",
-  ...((process.env.CLIENT_URL || "").split(",").map((origin) => origin.trim()).filter(Boolean)),
 ];
 
+const fromEnv = (process.env.CLIENT_URL || "")
+  .split(",")
+  .map((o) => normalizeOrigin(o))
+  .filter(Boolean);
+
+const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...fromEnv])];
+
 const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+  origin(origin, callback) {
+    if (!origin) {
       return callback(null, true);
     }
-
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
     return callback(new Error("CORS policy blocked this origin: " + origin));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 204,
 };
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors(corsOptions));
+
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(morgan("dev"));
 app.use("/api", (req, res, next) => {

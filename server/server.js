@@ -33,31 +33,32 @@ const server = http.createServer(app);
 initializeSocket(server);
 app.disable("etag");
 
-/** Strip trailing slash so origins match the browser-sent Origin header exactly. */
-const normalizeOrigin = (value) => String(value || "").trim().replace(/\/$/, "");
-
 /**
- * Production frontend (Vercel) + local dev. Merge CLIENT_URL from env (comma-separated).
- * Only listed origins receive Access-Control-Allow-Origin when credentials: true.
+ * Browser CORS allowlist (must match Origin header exactly; no trailing slash).
+ * Do not throw from the cors origin callback — use callback(null, false) for disallowed origins.
  */
-const defaultAllowedOrigins = [
-  "https://ll-blue-xi.vercel.app",
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://127.0.0.1:5173",
-  "http://127.0.0.1:5174",
-  "https://localhost:5173",
-  "https://localhost:5174",
-  "https://127.0.0.1:5173",
-  "https://127.0.0.1:5174",
-];
+const allowedOrigins = ["https://ll-blue-xi.vercel.app"];
 
-const fromEnv = (process.env.CLIENT_URL || "")
-  .split(",")
-  .map((o) => normalizeOrigin(o))
-  .filter(Boolean);
+const corsAllowedMethods = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
+const corsAllowedHeaders = "Content-Type, Authorization";
 
-const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...fromEnv])];
+/** Manual preflight — avoids app.options("*", ...) which breaks path-to-regexp in Express 5+. */
+app.use((req, res, next) => {
+  if (req.method !== "OPTIONS") {
+    return next();
+  }
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", corsAllowedMethods);
+    res.setHeader("Access-Control-Allow-Headers", corsAllowedHeaders);
+    res.setHeader("Access-Control-Max-Age", "86400");
+    return res.status(204).end();
+  }
+  return res.status(204).end();
+});
 
 const corsOptions = {
   origin(origin, callback) {
@@ -67,7 +68,7 @@ const corsOptions = {
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    return callback(new Error("CORS policy blocked this origin: " + origin));
+    return callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -76,7 +77,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

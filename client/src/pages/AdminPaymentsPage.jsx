@@ -121,12 +121,13 @@ const AdminPaymentsPage = () => {
                   <th className="px-5 py-4">Status</th>
                   <th className="px-5 py-4">Paid at</th>
                   <th className="px-5 py-4">Payment ID</th>
+                  <th className="px-5 py-4">Receipt</th>
                 </tr>
               </thead>
               <tbody className="text-slate-700">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center text-slate-500">
+                    <td colSpan={8} className="px-5 py-12 text-center text-slate-500">
                       Loading payments…
                     </td>
                   </tr>
@@ -153,11 +154,23 @@ const AdminPaymentsPage = () => {
                       <td className="max-w-[140px] truncate px-5 py-4 font-mono text-xs text-slate-600">
                         {payment.razorpayPaymentId || "—"}
                       </td>
+                      <td className="px-5 py-4">
+                        {payment.status === "paid" ? (
+                          <Link
+                            to={"/admin/receipt/" + payment._id}
+                            className="font-bold text-amber-800 underline-offset-2 hover:underline"
+                          >
+                            View
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center text-slate-500">
+                    <td colSpan={8} className="px-5 py-12 text-center text-slate-500">
                       No payments match your filters.
                     </td>
                   </tr>

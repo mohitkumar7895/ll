@@ -27,6 +27,7 @@ export const fetchPayments = async () => (await api.get("/payments")).data;
 export const fetchPaymentConfig = async () => (await api.get("/payments/config")).data;
 export const createPaymentOrder = async (payload) => (await api.post("/payments/create-order", payload)).data;
 export const verifyPayment = async (payload) => (await api.post("/payments/verify", payload)).data;
+export const fetchPaymentById = async (paymentId) => (await api.get("/payments/" + paymentId)).data;
 export const checkIn = async () => (await api.post("/attendance/check-in")).data;
 export const checkOut = async () => (await api.post("/attendance/check-out")).data;
 export const createSeat = async (payload) => (await api.post("/seats", payload)).data;

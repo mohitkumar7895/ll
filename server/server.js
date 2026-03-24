@@ -102,6 +102,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/payment", paymentRoutes);
 
 /** Browsers hit these on the API host; avoid 404 spam in logs (Vercel / serverless). */
 app.get(["/favicon.ico", "/favicon.png"], (_req, res) => {

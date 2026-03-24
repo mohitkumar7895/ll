@@ -12,9 +12,9 @@ const DashboardLayout = ({ title, subtitle, children }) => {
   const isAdmin = user?.role === "admin";
 
   return (
-    <div className="min-h-[100dvh] min-w-0 bg-slate-100 text-slate-900 max-lg:bg-[linear-gradient(180deg,#f5f7fc_0%,#eef1f8_55%,#e8ecf4_100%)] lg:bg-slate-100">
+    <div className="min-h-[100dvh] min-w-0 bg-slate-100 text-slate-900 print:bg-white max-lg:bg-[linear-gradient(180deg,#f5f7fc_0%,#eef1f8_55%,#e8ecf4_100%)] lg:bg-slate-100">
       <div className="mx-auto max-w-7xl px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6 sm:py-6 lg:px-8">
-        <div className="mb-5 rounded-[1.25rem] border border-transparent bg-white p-4 shadow-xl shadow-slate-200/60 max-lg:border-indigo-100/40 max-lg:bg-gradient-to-br max-lg:from-white max-lg:to-indigo-50/35 max-lg:shadow-lg max-lg:shadow-indigo-500/[0.06] sm:mb-6 sm:rounded-3xl sm:p-5 lg:border-transparent lg:bg-white lg:from-white lg:to-white lg:shadow-xl lg:shadow-slate-200/60">
+        <div className="no-print mb-5 rounded-[1.25rem] border border-transparent bg-white p-4 shadow-xl shadow-slate-200/60 max-lg:border-indigo-100/40 max-lg:bg-gradient-to-br max-lg:from-white max-lg:to-indigo-50/35 max-lg:shadow-lg max-lg:shadow-indigo-500/[0.06] sm:mb-6 sm:rounded-3xl sm:p-5 lg:border-transparent lg:bg-white lg:from-white lg:to-white lg:shadow-xl lg:shadow-slate-200/60">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <p className="text-xs font-medium uppercase tracking-[0.25em] text-indigo-600 sm:text-sm sm:tracking-[0.3em]">

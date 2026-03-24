@@ -11,6 +11,8 @@ import StudentPaymentsPage from "./pages/StudentPaymentsPage";
 import MarkAttendancePage from "./pages/MarkAttendancePage";
 import StudentProfilePage from "./pages/StudentProfilePage";
 import SeatBookingPage from "./pages/SeatBookingPage";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import Receipt from "./pages/Receipt";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminPaymentsPage from "./pages/AdminPaymentsPage";
 import AdminStudentsPage from "./pages/AdminStudentsPage";
@@ -68,6 +70,22 @@ const App = () => {
         }
       />
       <Route
+        path="/student/payment-success"
+        element={
+          <ProtectedRoute role="student">
+            <PaymentSuccess />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/receipt/:paymentId"
+        element={
+          <ProtectedRoute role="student">
+            <Receipt />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/student/attendance"
         element={
           <ProtectedRoute role="student">
@@ -112,6 +130,14 @@ const App = () => {
         element={
           <ProtectedRoute role="admin">
             <AdminPaymentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/receipt/:paymentId"
+        element={
+          <ProtectedRoute role="admin">
+            <Receipt />
           </ProtectedRoute>
         }
       />

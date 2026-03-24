@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import DashboardLayout from "../layouts/DashboardLayout";
 import SeatGrid from "../components/SeatGrid";
@@ -36,6 +36,7 @@ const loadRazorpayScript = () =>
   });
 
 const SeatBookingPage = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [seats, setSeats] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -148,6 +149,10 @@ const SeatBookingPage = () => {
             });
             toast.success(verifyResponse.message || "Payment successful and seat booked");
             await loadData();
+            navigate("/student/payment-success", {
+              state: { paymentId: verifyResponse.payment?._id },
+              replace: false,
+            });
           } catch (error) {
             toast.error(String(error));
           } finally {

@@ -103,12 +103,13 @@ const StudentPaymentsPage = () => {
                   <th className="px-5 py-4">Status</th>
                   <th className="px-5 py-4">Paid at</th>
                   <th className="px-5 py-4">Payment ID</th>
+                  <th className="px-5 py-4">Receipt</th>
                 </tr>
               </thead>
               <tbody className="text-slate-700">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="px-5 py-12 text-center">
+                    <td colSpan={7} className="px-5 py-12 text-center">
                       Loading…
                     </td>
                   </tr>
@@ -121,11 +122,23 @@ const StudentPaymentsPage = () => {
                       <td className="px-5 py-4 capitalize">{p.status}</td>
                       <td className="px-5 py-4 text-xs tabular-nums text-slate-600">{formatDateTime(p.paidAt || p.createdAt)}</td>
                       <td className="max-w-[120px] truncate px-5 py-4 font-mono text-xs">{p.razorpayPaymentId || "—"}</td>
+                      <td className="px-5 py-4">
+                        {p.status === "paid" ? (
+                          <Link
+                            to={"/student/receipt/" + p._id}
+                            className="font-bold text-indigo-600 underline-offset-2 hover:underline"
+                          >
+                            View
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-5 py-12 text-center text-slate-500">
+                    <td colSpan={7} className="px-5 py-12 text-center text-slate-500">
                       No payments in this filter.
                     </td>
                   </tr>

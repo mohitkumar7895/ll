@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const mongoose = require("mongoose");
 const Payment = require("../models/Payment");
 const Seat = require("../models/Seat");
 const Booking = require("../models/Booking");
@@ -35,10 +36,22 @@ const getPayments = async (req, res) => {
   }
 };
 
+const receiptCompanyName = () => (process.env.RECEIPT_COMPANY_NAME || process.env.COMPANY_NAME || "Library Hub").trim();
+
+const receiptLogoUrl = () => (process.env.RECEIPT_LOGO_URL || "").trim();
+
+const generateReceiptId = () => {
+  const y = new Date().getFullYear();
+  const rnd = crypto.randomBytes(4).toString("hex").toUpperCase();
+  return "REC-" + y + "-" + rnd;
+};
+
 const getPaymentConfig = async (req, res) => {
   return res.json({
     success: true,
     key: process.env.RAZORPAY_KEY_ID || "",
+    receiptCompanyName: receiptCompanyName(),
+    receiptLogoUrl: receiptLogoUrl(),
   });
 };
 
@@ -85,6 +98,7 @@ const createOrder = async (req, res) => {
 
     const payment = await Payment.create({
       student: req.user._id,
+      userId: req.user._id,
       seat: seat._id,
       seatNumber: seat.seatNumber,
       durationKey,
@@ -199,12 +213,37 @@ const verifyPayment = async (req, res) => {
     seat.activeBooking = booking._id;
     await seat.save();
 
+    const courseParts = [];
+    if (req.user.course && String(req.user.course).trim()) {
+      courseParts.push(String(req.user.course).trim());
+    }
+    courseParts.push("Seat " + seat.seatNumber);
+    courseParts.push(option.label);
+
+    let receiptId = generateReceiptId();
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const clash = await Payment.findOne({ receiptId });
+      if (!clash) {
+        break;
+      }
+      receiptId = generateReceiptId();
+    }
+
     payment.booking = booking._id;
     payment.status = "paid";
     payment.razorpayOrderId = razorpay_order_id;
     payment.razorpayPaymentId = razorpay_payment_id;
     payment.razorpaySignature = razorpay_signature;
     payment.paidAt = new Date();
+    payment.receiptId = receiptId;
+    payment.nameSnapshot = req.user.name || "";
+    payment.emailSnapshot = req.user.email || "";
+    payment.phone = req.user.phone || "";
+    payment.courseServiceName = courseParts.join(" · ");
+    payment.paymentMethod = "Razorpay";
+    payment.companyName = receiptCompanyName();
+    payment.receiptLogoUrl = receiptLogoUrl();
+    payment.userId = req.user._id;
     await payment.save();
 
     await sendEmail({
@@ -242,9 +281,43 @@ const verifyPayment = async (req, res) => {
   }
 };
 
+const getPaymentById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, error: "Invalid payment id" });
+    }
+
+    const payment = await Payment.findById(id)
+      .populate("student", "name email studentId phone course")
+      .populate("seat", "seatNumber seatType")
+      .populate("booking", "status startTime endTime durationLabel");
+
+    if (!payment) {
+      return res.status(404).json({ success: false, error: "Payment not found" });
+    }
+
+    const isOwner = String(payment.student?._id || payment.student) === String(req.user._id);
+    const isAdmin = req.user.role === "admin";
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, error: "Access denied" });
+    }
+
+    if (payment.status !== "paid") {
+      return res.status(400).json({ success: false, error: "Receipt is available only for successful payments" });
+    }
+
+    return res.json({ success: true, payment });
+  } catch (error) {
+    console.error("Fetching payment failed:", error.stack || error.message);
+    return res.status(500).json({ success: false, error: error.message || "Failed to fetch payment" });
+  }
+};
+
 module.exports = {
   getPayments,
   getPaymentConfig,
   createOrder,
   verifyPayment,
+  getPaymentById,
 };

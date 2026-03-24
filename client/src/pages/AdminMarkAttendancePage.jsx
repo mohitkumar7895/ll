@@ -218,7 +218,7 @@ const AdminMarkAttendancePage = () => {
             <option value="">— Select student —</option>
             {students.map((s) => (
               <option key={s._id} value={s._id}>
-                {s.name} · {s.studentId || s.rollNo} · {s.email}
+                {s.name} · {s.studentId || "—"} · {s.email}
               </option>
             ))}
           </select>

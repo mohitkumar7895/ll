@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const Payment = require("../models/Payment");
 const Seat = require("../models/Seat");
 const Booking = require("../models/Booking");
+const Student = require("../models/Student");
 const { getBookingOption } = require("../utils/bookingDurations");
 const { getRazorpay } = require("../utils/razorpay");
 const { broadcastSeatState, broadcastPaymentsUpdate } = require("../utils/realtime");
@@ -239,12 +240,7 @@ const verifyPayment = async (req, res) => {
     seat.activeBooking = booking._id;
     await seat.save();
 
-    const courseParts = [];
-    if (req.user.course && String(req.user.course).trim()) {
-      courseParts.push(String(req.user.course).trim());
-    }
-    courseParts.push("Seat " + seat.seatNumber);
-    courseParts.push(option.label);
+    const serviceLine = ["Seat " + seat.seatNumber, option.label].join(" · ");
 
     let receiptId = generateReceiptId();
     for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -265,7 +261,7 @@ const verifyPayment = async (req, res) => {
     payment.nameSnapshot = req.user.name || "";
     payment.emailSnapshot = req.user.email || "";
     payment.phone = req.user.phone || "";
-    payment.courseServiceName = courseParts.join(" · ");
+    payment.courseServiceName = serviceLine;
     payment.paymentMethod = "ONLINE";
     payment.companyName = receiptCompanyName();
     payment.receiptLogoUrl = receiptLogoUrl();
@@ -288,7 +284,7 @@ const verifyPayment = async (req, res) => {
 
     const populatedBooking = await Booking.findById(booking._id)
       .populate("seat", "seatNumber seatType status")
-      .populate("student", "name email studentId rollNo");
+      .populate("student", "name email studentId");
 
     const populatedPayment = await Payment.findById(payment._id)
       .populate("student", "name email studentId")
@@ -315,7 +311,7 @@ const getPaymentById = async (req, res) => {
     }
 
     const payment = await Payment.findById(id)
-      .populate("student", "name email studentId phone course")
+      .populate("student", "name email studentId phone")
       .populate("seat", "seatNumber seatType")
       .populate("booking", "status startTime endTime durationLabel");
 
@@ -340,24 +336,35 @@ const getPaymentById = async (req, res) => {
   }
 };
 
-const createCashPayment = async (req, res) => {
+/** Admin-only: book a seat for a student; cash is recorded as received immediately (CASH_RECEIVED). */
+const adminCreateCashBooking = async (req, res) => {
   try {
-    console.log("[createCashPayment] start", { student: req.user?._id, body: req.body });
-    const { seatId, durationKey } = req.body;
+    const { studentId, seatId, durationKey } = req.body;
     const option = getBookingOption(durationKey);
 
+    if (!studentId || !mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({ success: false, error: "Valid studentId is required" });
+    }
     if (!seatId || !option) {
       return res.status(400).json({ success: false, error: "Valid seatId and durationKey are required" });
     }
 
+    const student = await Student.findById(studentId);
+    if (!student) {
+      return res.status(404).json({ success: false, error: "Student not found" });
+    }
+
     const existingActiveBooking = await Booking.findOne({
-      student: req.user._id,
+      student: student._id,
       status: { $in: ["reserved", "active"] },
       endTime: { $gt: new Date() },
     });
 
     if (existingActiveBooking) {
-      return res.status(400).json({ success: false, error: "You already have an active booking" });
+      return res.status(400).json({
+        success: false,
+        error: "This student already has an active booking. Cancel it first or pick another student.",
+      });
     }
 
     const seat = await Seat.findById(seatId);
@@ -373,7 +380,7 @@ const createCashPayment = async (req, res) => {
     const endTime = new Date(startTime.getTime() + option.minutes * 60 * 1000);
 
     const booking = await Booking.create({
-      student: req.user._id,
+      student: student._id,
       seat: seat._id,
       durationKey,
       durationLabel: option.label,
@@ -387,12 +394,7 @@ const createCashPayment = async (req, res) => {
     seat.activeBooking = booking._id;
     await seat.save();
 
-    const courseParts = [];
-    if (req.user.course && String(req.user.course).trim()) {
-      courseParts.push(String(req.user.course).trim());
-    }
-    courseParts.push("Seat " + seat.seatNumber);
-    courseParts.push(option.label);
+    const serviceLine = ["Seat " + seat.seatNumber, option.label].join(" · ");
 
     let receiptId = generateReceiptId();
     for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -403,9 +405,10 @@ const createCashPayment = async (req, res) => {
       receiptId = generateReceiptId();
     }
 
+    const paidAt = new Date();
     const payment = await Payment.create({
-      student: req.user._id,
-      userId: req.user._id,
+      student: student._id,
+      userId: student._id,
       booking: booking._id,
       seat: seat._id,
       seatNumber: seat.seatNumber,
@@ -413,28 +416,30 @@ const createCashPayment = async (req, res) => {
       durationLabel: option.label,
       amount: option.amount,
       currency: option.currency,
-      status: "CASH_PENDING",
+      status: "CASH_RECEIVED",
       paymentMethod: "CASH",
       receiptId,
-      nameSnapshot: req.user.name || "",
-      emailSnapshot: req.user.email || "",
-      phone: req.user.phone || "",
-      courseServiceName: courseParts.join(" · "),
+      nameSnapshot: student.name || "",
+      emailSnapshot: student.email || "",
+      phone: student.phone || "",
+      courseServiceName: serviceLine,
       companyName: receiptCompanyName(),
       receiptLogoUrl: receiptLogoUrl(),
-      paidAt: null,
+      paidAt,
     });
 
-    await sendEmail({
-      to: req.user.email,
-      subject: "Seat reserved — cash payment pending",
-      text:
-        "Your seat " +
-        seat.seatNumber +
-        " is reserved. Please pay in cash at the desk. Receipt ID: " +
-        receiptId +
-        ".",
-    });
+    if (student.email) {
+      await sendEmail({
+        to: student.email,
+        subject: "Seat booked — cash payment received",
+        text:
+          "Your seat " +
+          seat.seatNumber +
+          " is booked. Cash payment has been recorded. Receipt ID: " +
+          receiptId +
+          ".",
+      });
+    }
 
     await broadcastSeatState();
     broadcastPaymentsUpdate({ paymentId: payment._id, bookingId: booking._id });
@@ -446,16 +451,16 @@ const createCashPayment = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Booking created — pay cash at the desk",
+      message: "Seat booked — cash recorded as received",
       paymentId: populatedPayment._id,
       status: populatedPayment.status,
       payment: populatedPayment,
       booking: await Booking.findById(booking._id)
         .populate("seat", "seatNumber seatType status")
-        .populate("student", "name email studentId rollNo"),
+        .populate("student", "name email studentId"),
     });
   } catch (error) {
-    console.error("Cash payment create failed:", error.stack || error.message);
+    console.error("Admin cash booking failed:", error.stack || error.message);
     return res.status(500).json({ success: false, error: error.message || "Failed to create cash booking" });
   }
 };
@@ -512,6 +517,6 @@ module.exports = {
   createOrder,
   verifyPayment,
   getPaymentById,
-  createCashPayment,
+  adminCreateCashBooking,
   markCashPaid,
 };

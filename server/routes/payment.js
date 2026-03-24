@@ -16,7 +16,7 @@ router.get("/", protect, getPayments);
 router.post("/create-order", protect, authorize("student"), createOrder);
 router.post("/verify", protect, authorize("student"), verifyPayment);
 
-/** POST /cash is registered on `app` in server.js (see createCashPayment). */
+/** POST /cash is registered on `app` in server.js (admin-only cash booking). */
 
 router.put("/mark-paid/:id", protect, authorize("admin"), markCashPaid);
 

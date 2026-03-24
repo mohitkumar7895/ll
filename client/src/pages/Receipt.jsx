@@ -11,7 +11,7 @@ const buildReceiptData = (payment) => {
   const st = payment.student;
   const seat = payment.seat;
   const status = payment.status;
-  const fallbackCourse =
+  const bookingLine =
     payment.courseServiceName ||
     [seat?.seatNumber ? "Seat " + seat.seatNumber : null, payment.durationLabel].filter(Boolean).join(" · ");
 
@@ -29,19 +29,26 @@ const buildReceiptData = (payment) => {
   let offlineNote = null;
   let amountFooterNote = "Inclusive of applicable taxes";
   let footerExtra = null;
+  let amountLabel = "Amount paid";
+  let cashNoteSuccessStyle = false;
+  let footerPrimaryLine = "Thank you for your payment";
 
   if (status === "CASH_PENDING") {
-    watermarkText = "PENDING";
-    watermarkClass = "r-wm-pending";
-    statusBadgeHeader = "PENDING";
-    statusBadgeModifier = "r-sb-pending";
-    paymentStatusLine = "Pending — cash to be collected offline";
-    paymentMethodDisplay = "Cash";
+    /** Entire slip uses success tone; cash still to be collected at desk. */
+    watermarkText = "SUCCESS";
+    watermarkClass = "r-wm-paid";
+    statusBadgeHeader = "SUCCESS";
+    statusBadgeModifier = "r-sb-success";
+    paymentStatusLine = "Booking successful — pay cash at desk to complete";
+    paymentMethodDisplay = "Cash — booking successful";
     showGatewayIds = false;
-    verifyLine1 = "Pending";
-    verifyLine2 = "Cash";
-    offlineNote = "Payment to be collected offline";
-    amountFooterNote = "Payable offline";
+    verifyLine1 = "SUCCESS";
+    verifyLine2 = "Booking confirmed";
+    offlineNote = "Success — pay this amount in cash at the library desk";
+    amountFooterNote = "Booking confirmed successfully — amount due below";
+    amountLabel = "Amount due (cash)";
+    cashNoteSuccessStyle = true;
+    footerPrimaryLine = "Booking confirmed successfully";
   } else if (status === "CASH_RECEIVED") {
     paymentStatusLine = "Paid — payment received in cash";
     paymentMethodDisplay = "Cash";
@@ -70,7 +77,7 @@ const buildReceiptData = (payment) => {
     studentName: payment.nameSnapshot || st?.name || "—",
     email: payment.emailSnapshot || st?.email || "—",
     phone: payment.phone || st?.phone || "—",
-    courseServiceName: fallbackCourse || "—",
+    courseServiceName: bookingLine || "—",
     amountPaise: payment.amount,
     paymentMethodDisplay,
     paymentStatusLine,
@@ -84,6 +91,9 @@ const buildReceiptData = (payment) => {
     offlineNote,
     amountFooterNote,
     footerExtra,
+    amountLabel,
+    cashNoteSuccessStyle,
+    footerPrimaryLine,
   };
 };
 

@@ -113,7 +113,7 @@ const AdminDashboard = () => {
         <StatCard label="Revenue" value={formatCurrency(stats.totalRevenue)} accent="rose" />
       </div>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
         <Link
           to="/admin/attendance"
           className="group relative overflow-hidden rounded-3xl border border-emerald-200/60 bg-gradient-to-br from-emerald-600 to-teal-800 p-6 text-white shadow-xl shadow-emerald-900/20 transition hover:-translate-y-0.5 hover:shadow-2xl"
@@ -139,6 +139,15 @@ const AdminDashboard = () => {
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-amber-100/90">Treasury</p>
           <h3 className="mt-2 font-display text-xl font-bold">All Payments</h3>
           <p className="mt-2 text-sm text-amber-100/90">Razorpay IDs, plans, revenue totals.</p>
+          <span className="mt-4 inline-flex text-sm font-bold text-white group-hover:underline">Open page →</span>
+        </Link>
+        <Link
+          to="/admin/cash-booking"
+          className="group relative overflow-hidden rounded-3xl border border-lime-200/50 bg-gradient-to-br from-lime-700 to-emerald-950 p-6 text-white shadow-xl shadow-emerald-900/25 transition hover:-translate-y-0.5 hover:shadow-2xl"
+        >
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-lime-100/90">Desk</p>
+          <h3 className="mt-2 font-display text-xl font-bold">Cash seat booking</h3>
+          <p className="mt-2 text-sm text-lime-100/90">Cash turant received — seat book + receipt.</p>
           <span className="mt-4 inline-flex text-sm font-bold text-white group-hover:underline">Open page →</span>
         </Link>
         <Link

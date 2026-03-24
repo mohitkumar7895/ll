@@ -13,7 +13,7 @@ const signupStudent = async (req, res) => {
   console.log("POST /api/auth/student/signup req.body:", req.body);
 
   try {
-    const { name, rollNo, course, phone, email, password } = req.body;
+    const { name, phone, email, password } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -22,31 +22,27 @@ const signupStudent = async (req, res) => {
       });
     }
 
-    if (!rollNo || !phone) {
+    if (!phone) {
       return res.status(400).json({
         success: false,
-        error: "rollNo and phone are required",
+        error: "phone is required",
       });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    const existingStudent = await Student.findOne({
-      $or: [{ email: normalizedEmail }, { rollNo: rollNo.trim() }],
-    });
+    const existingStudent = await Student.findOne({ email: normalizedEmail });
 
     if (existingStudent) {
       return res.status(409).json({
         success: false,
-        error: "Student with this email or roll number already exists",
+        error: "Student with this email already exists",
       });
     }
 
     const imagePath = buildPhotoPath(req.file);
     const student = await Student.create({
       name: name.trim(),
-      rollNo: rollNo.trim(),
-      course: course?.trim() || "",
       phone: phone.trim(),
       email: normalizedEmail,
       password,

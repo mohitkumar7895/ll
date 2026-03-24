@@ -91,7 +91,7 @@ const AdminPaymentsPage = () => {
   return (
     <DashboardLayout
       title="Payments"
-      subtitle="Online (Razorpay) and cash — filter, receipts, mark cash as received."
+      subtitle="Online (Razorpay) and cash received. Mark pending only if old records are still open."
     >
       <div className="font-display min-w-0">
         <div className="relative overflow-hidden rounded-[2rem] border border-amber-500/25 bg-gradient-to-br from-amber-950 via-slate-900 to-slate-950 p-5 text-white shadow-2xl shadow-amber-900/25 sm:p-8 md:p-10">
@@ -101,7 +101,7 @@ const AdminPaymentsPage = () => {
               <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-200/90">Treasury</p>
               <h2 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl">All payments</h2>
               <p className="mt-3 max-w-xl text-sm text-slate-300">
-                Green = paid online, amber = cash pending, blue tint = cash. Mark pending rows when cash is collected.
+                Green = paid online, blue tint = cash received. Amber = legacy cash pending (mark as received if needed).
               </p>
             </div>
             <div className="flex flex-wrap gap-3">

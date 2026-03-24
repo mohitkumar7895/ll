@@ -9,21 +9,10 @@ const studentSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    rollNo: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
     studentId: {
       type: String,
       unique: true,
       index: true,
-    },
-    course: {
-      type: String,
-      trim: true,
-      default: "",
     },
     phone: {
       type: String,
@@ -90,6 +79,8 @@ studentSchema.set("toJSON", {
   transform: (_, returnedObject) => {
     delete returnedObject.password;
     delete returnedObject.__v;
+    delete returnedObject.rollNo;
+    delete returnedObject.course;
     return returnedObject;
   },
 });

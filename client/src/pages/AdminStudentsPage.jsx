@@ -6,8 +6,6 @@ import { deleteStudentAsAdmin, fetchStudents, updateStudentAsAdmin } from "../se
 
 const emptyEditForm = () => ({
   name: "",
-  rollNo: "",
-  course: "",
   phone: "",
   email: "",
   password: "",
@@ -45,7 +43,7 @@ const AdminStudentsPage = () => {
     const q = query.trim().toLowerCase();
     if (!q) return students;
     return students.filter((s) => {
-      const blob = [s.name, s.studentId, s.email, s.rollNo, s.course].filter(Boolean).join(" ").toLowerCase();
+      const blob = [s.name, s.studentId, s.email].filter(Boolean).join(" ").toLowerCase();
       return blob.includes(q);
     });
   }, [students, query]);
@@ -54,8 +52,6 @@ const AdminStudentsPage = () => {
     setEditId(student._id);
     setEditForm({
       name: student.name || "",
-      rollNo: student.rollNo || "",
-      course: student.course || "",
       phone: student.phone || "",
       email: student.email || "",
       password: "",
@@ -89,8 +85,6 @@ const AdminStudentsPage = () => {
     try {
       const fd = new FormData();
       fd.append("name", editForm.name.trim());
-      fd.append("rollNo", editForm.rollNo.trim());
-      fd.append("course", typeof editForm.course === "string" ? editForm.course.trim() : "");
       fd.append("phone", editForm.phone.trim());
       fd.append("email", editForm.email.trim().toLowerCase());
       fd.append("penaltyAmount", String(editForm.penaltyAmount === "" ? 0 : editForm.penaltyAmount));
@@ -166,7 +160,7 @@ const AdminStudentsPage = () => {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search name, student ID, email, roll no…"
+            placeholder="Search name, student ID, email…"
             className="w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 sm:text-sm md:max-w-xl"
           />
         </div>
@@ -210,14 +204,6 @@ const AdminStudentsPage = () => {
                   <div className="flex justify-between gap-2">
                     <dt className="text-slate-400">Email</dt>
                     <dd className="truncate text-right font-medium text-slate-800">{student.email}</dd>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-slate-400">Roll</dt>
-                    <dd className="font-medium">{student.rollNo || "—"}</dd>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-slate-400">Course</dt>
-                    <dd>{student.course || "—"}</dd>
                   </div>
                   <div className="flex justify-between gap-2 border-t border-slate-100 pt-3">
                     <dt className="font-semibold text-slate-800">Penalty</dt>
@@ -270,33 +256,18 @@ const AdminStudentsPage = () => {
                   className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
                 />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500" htmlFor="edit-roll">
-                    Roll no.
-                  </label>
-                  <input
-                    id="edit-roll"
-                    name="rollNo"
-                    value={editForm.rollNo}
-                    onChange={handleEditChange}
-                    required
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500" htmlFor="edit-phone">
-                    Phone
-                  </label>
-                  <input
-                    id="edit-phone"
-                    name="phone"
-                    value={editForm.phone}
-                    onChange={handleEditChange}
-                    required
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-                  />
-                </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500" htmlFor="edit-phone">
+                  Phone
+                </label>
+                <input
+                  id="edit-phone"
+                  name="phone"
+                  value={editForm.phone}
+                  onChange={handleEditChange}
+                  required
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+                />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500" htmlFor="edit-email">
@@ -309,18 +280,6 @@ const AdminStudentsPage = () => {
                   value={editForm.email}
                   onChange={handleEditChange}
                   required
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500" htmlFor="edit-course">
-                  Course
-                </label>
-                <input
-                  id="edit-course"
-                  name="course"
-                  value={editForm.course}
-                  onChange={handleEditChange}
                   className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
                 />
               </div>

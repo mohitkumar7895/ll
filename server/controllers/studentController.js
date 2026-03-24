@@ -23,7 +23,7 @@ const getMyProfile = async (req, res) => {
 };
 
 const updateMyProfile = async (req, res) => {
-  const allowedFields = ["name", "rollNo", "course", "phone", "email", "password"];
+  const allowedFields = ["name", "phone", "email", "password"];
 
   allowedFields.forEach((field) => {
     if (req.body[field]) {
@@ -60,16 +60,7 @@ const updateStudentByAdmin = async (req, res) => {
       return res.status(404).json({ success: false, error: "Student not found" });
     }
 
-    const {
-      name,
-      rollNo,
-      course,
-      phone,
-      email,
-      password,
-      penaltyAmount,
-      subscriptionStatus,
-    } = req.body;
+    const { name, phone, email, password, penaltyAmount, subscriptionStatus } = req.body;
 
     if (email !== undefined && email.trim().toLowerCase() !== student.email) {
       const taken = await Student.findOne({
@@ -82,19 +73,7 @@ const updateStudentByAdmin = async (req, res) => {
       student.email = email.trim().toLowerCase();
     }
 
-    if (rollNo !== undefined && rollNo.trim() !== student.rollNo) {
-      const taken = await Student.findOne({
-        rollNo: rollNo.trim(),
-        _id: { $ne: id },
-      });
-      if (taken) {
-        return res.status(409).json({ success: false, error: "Another student already uses this roll number" });
-      }
-      student.rollNo = rollNo.trim();
-    }
-
     if (name !== undefined) student.name = name.trim();
-    if (course !== undefined) student.course = typeof course === "string" ? course.trim() : "";
     if (phone !== undefined) student.phone = phone.trim();
     if (password !== undefined && password !== "") {
       if (String(password).length < 6) {

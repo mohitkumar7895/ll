@@ -12,7 +12,6 @@ const SignupPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: "",
-    rollNo: "",
     phone: "",
     email: "",
     password: "",
@@ -96,21 +95,6 @@ const SignupPage = () => {
                   required
                   className={inputClass}
                   placeholder="Your name"
-                />
-              </div>
-              <div className="sm:col-span-1">
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400" htmlFor="rollNo">
-                  Roll no.
-                </label>
-                <input
-                  id="rollNo"
-                  name="rollNo"
-                  type="text"
-                  value={form.rollNo}
-                  onChange={handleChange}
-                  required
-                  className={inputClass}
-                  placeholder="Roll number"
                 />
               </div>
               <div className="sm:col-span-1">

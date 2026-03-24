@@ -103,7 +103,7 @@ const paymentSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
-    /** Course / service line on slip, e.g. "B.Tech · Seat A12 · Full day" */
+    /** Booking line on slip, e.g. "Seat A12 · Full day" */
     courseServiceName: {
       type: String,
       trim: true,

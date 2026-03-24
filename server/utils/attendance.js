@@ -21,9 +21,9 @@ const calculateTotalHours = (checkInTime, checkOutTime) => {
 
 const getTodayAttendanceRecords = async (attendanceDate = getAttendanceDate()) => {
   const [students, attendance] = await Promise.all([
-    Student.find().select("name email studentId rollNo").sort({ name: 1 }).lean(),
+    Student.find().select("name email studentId").sort({ name: 1 }).lean(),
     Attendance.find({ attendanceDate })
-      .populate("student", "name email studentId rollNo")
+      .populate("student", "name email studentId")
       .populate("seat", "seatNumber seatType")
       .sort({ checkInTime: -1 })
       .lean(),

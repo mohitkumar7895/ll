@@ -28,16 +28,13 @@ export const fetchPayments = async (params) => (await api.get("/payment", { para
 export const fetchPaymentConfig = async () => (await api.get("/payment/config")).data;
 export const createPaymentOrder = async (payload) => (await api.post("/payment/create-order", payload)).data;
 export const verifyPayment = async (payload) => (await api.post("/payment/verify", payload)).data;
-/**
- * Uses shared `api` (baseURL `/api` in dev) so Vite proxies to http://localhost:5000.
- * Do not hardcode http://localhost:5000 here — HTTPS dev (https://localhost:5173) would block it (mixed content).
- */
-export const createCashPayment = async (payload) => {
+/** Admin only — body: `{ studentId, seatId, durationKey }` → cash booking (CASH_RECEIVED). */
+export const adminCreateCashBooking = async (payload) => {
   try {
     const res = await api.post("/payment/cash", payload);
     return res.data;
   } catch (err) {
-    console.error("Cash Payment Error:", err);
+    console.error("Cash booking error:", err);
     throw err;
   }
 };

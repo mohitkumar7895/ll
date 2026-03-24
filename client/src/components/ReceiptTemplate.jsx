@@ -159,6 +159,13 @@ const receiptCss = `
   line-height: 1.45;
   color: #92400e;
 }
+.r-cash-note.r-cash-note-success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-left: 4px solid #059669;
+  color: #065f46;
+  font-weight: 600;
+}
 .r-footer-extra {
   margin-top: 8px;
   font-size: 11px;
@@ -317,6 +324,10 @@ const receiptCss = `
   padding: 14px 16px;
   color: #ffffff;
 }
+.r-amount.r-amount-success-due {
+  border-color: rgba(16, 185, 129, 0.55);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2);
+}
 @media (min-width: 640px) {
   .r-amount {
     flex-direction: row;
@@ -345,6 +356,10 @@ const receiptCss = `
   font-size: 10px;
   color: #94a3b8;
 }
+.r-amount-note.r-amount-note-success {
+  color: #a7f3d0;
+  font-weight: 600;
+}
 .r-amount-divider {
   display: none;
   height: 40px;
@@ -359,6 +374,16 @@ const receiptCss = `
   background: rgba(255, 255, 255, 0.1);
   padding: 8px 12px;
   text-align: center;
+}
+.r-verify.r-verify-success {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(52, 211, 153, 0.45);
+}
+.r-verify.r-verify-success p:first-child {
+  color: #a7f3d0;
+}
+.r-verify.r-verify-success p:last-child {
+  color: #6ee7b7;
 }
 @media (min-width: 640px) {
   .r-verify { text-align: right; }
@@ -512,6 +537,9 @@ const ReceiptTemplate = forwardRef(function ReceiptTemplate({ data }, ref) {
     offlineNote,
     amountFooterNote,
     footerExtra,
+    amountLabel = "Amount paid",
+    cashNoteSuccessStyle = false,
+    footerPrimaryLine = "Thank you for your payment",
   } = data;
 
   const when = displayDate
@@ -611,27 +639,31 @@ const ReceiptTemplate = forwardRef(function ReceiptTemplate({ data }, ref) {
         </div>
 
         <div className="r-course">
-          <p className="r-course-label">Course / service</p>
+          <p className="r-course-label">Booking details</p>
           <p className="r-course-text">{courseServiceName || "—"}</p>
         </div>
 
-        <div className="r-amount">
+        <div className={"r-amount" + (cashNoteSuccessStyle ? " r-amount-success-due" : "")}>
           <div>
-            <p className="r-amount-label">Amount paid</p>
+            <p className="r-amount-label">{amountLabel}</p>
             <p className="r-amount-sum">{formatCurrency(amountPaise)}</p>
-            <p className="r-amount-note">{amountFooterNote || "Inclusive of applicable taxes"}</p>
+            <p className={"r-amount-note" + (cashNoteSuccessStyle ? " r-amount-note-success" : "")}>
+              {amountFooterNote || "Inclusive of applicable taxes"}
+            </p>
           </div>
           <div className="r-amount-divider" />
-          <div className="r-verify">
+          <div className={"r-verify" + (cashNoteSuccessStyle ? " r-verify-success" : "")}>
             <p>{verifyLine1}</p>
             <p>{verifyLine2}</p>
           </div>
         </div>
 
-        {offlineNote ? <div className="r-cash-note">{offlineNote}</div> : null}
+        {offlineNote ? (
+          <div className={"r-cash-note" + (cashNoteSuccessStyle ? " r-cash-note-success" : "")}>{offlineNote}</div>
+        ) : null}
 
         <footer className="r-footer">
-          <p>Thank you for your payment</p>
+          <p>{footerPrimaryLine}</p>
           {footerExtra ? <p className="r-footer-extra">{footerExtra}</p> : null}
           <p>This is a computer-generated receipt and does not require a signature.</p>
         </footer>

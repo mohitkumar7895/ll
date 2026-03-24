@@ -20,7 +20,7 @@ const bookingRoutes = require("./routes/bookingRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const paymentRoutes = require("./routes/payment");
-const { createCashPayment } = require("./controllers/paymentController");
+const { adminCreateCashBooking } = require("./controllers/paymentController");
 const { protect, authorize } = require("./middleware/authMiddleware");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 const { getUploadBaseDir } = require("./utils/uploadPaths");
@@ -115,15 +115,16 @@ app.use("/api/dashboard", dashboardRoutes);
  * Also expose under `/api/payments/cash` for older clients.
  */
 const cashPaymentLog = (req, res, next) => {
-  console.log("[POST /api/payment/cash] incoming", {
-    studentId: req.user?._id?.toString?.() || req.user?._id,
+  console.log("[POST /api/payment/cash] admin cash booking", {
+    adminId: req.user?._id?.toString?.() || req.user?._id,
+    studentId: req.body?.studentId,
     seatId: req.body?.seatId,
     durationKey: req.body?.durationKey,
   });
   next();
 };
-app.post("/api/payment/cash", protect, authorize("student"), cashPaymentLog, createCashPayment);
-app.post("/api/payments/cash", protect, authorize("student"), cashPaymentLog, createCashPayment);
+app.post("/api/payment/cash", protect, authorize("admin"), cashPaymentLog, adminCreateCashBooking);
+app.post("/api/payments/cash", protect, authorize("admin"), cashPaymentLog, adminCreateCashBooking);
 
 app.use("/api/payment", paymentRoutes);
 app.use("/api/payments", paymentRoutes);

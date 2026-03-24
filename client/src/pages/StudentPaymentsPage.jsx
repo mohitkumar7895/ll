@@ -66,7 +66,7 @@ const StudentPaymentsPage = () => {
   return (
     <DashboardLayout
       title="My Payments"
-      subtitle="Online and cash receipts — same slip for both. Pending cash shows until desk confirms."
+      subtitle="Online and cash receipts — same slip. New cash bookings are recorded as received."
     >
       <div className="font-display min-w-0">
         <div className="relative overflow-hidden rounded-[2rem] border border-fuchsia-500/20 bg-gradient-to-br from-fuchsia-950 via-slate-900 to-violet-950 p-5 text-white shadow-2xl shadow-fuchsia-900/25 sm:p-8 md:p-10">

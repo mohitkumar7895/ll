@@ -15,6 +15,7 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import Receipt from "./pages/Receipt";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminPaymentsPage from "./pages/AdminPaymentsPage";
+import AdminCashBookingPage from "./pages/AdminCashBookingPage";
 import AdminStudentsPage from "./pages/AdminStudentsPage";
 import AdminTodayAttendancePage from "./pages/AdminTodayAttendancePage";
 import AdminMarkAttendancePage from "./pages/AdminMarkAttendancePage";
@@ -130,6 +131,14 @@ const App = () => {
         element={
           <ProtectedRoute role="admin">
             <AdminPaymentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/cash-booking"
+        element={
+          <ProtectedRoute role="admin">
+            <AdminCashBookingPage />
           </ProtectedRoute>
         }
       />

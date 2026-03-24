@@ -11,7 +11,7 @@ const getMyBookings = async (req, res) => {
     const query = req.user.role === "admin" ? {} : { student: req.user._id };
     const bookings = await Booking.find(query)
       .populate("seat", "seatNumber seatType status")
-      .populate("student", "name email studentId rollNo")
+      .populate("student", "name email studentId")
       .sort({ createdAt: -1 });
 
     return res.json({ success: true, bookings });
@@ -79,7 +79,7 @@ const createBooking = async (req, res) => {
 
     const populatedBooking = await Booking.findById(booking._id)
       .populate("seat", "seatNumber seatType status")
-      .populate("student", "name email studentId rollNo");
+      .populate("student", "name email studentId");
 
     return res.status(201).json({
       success: true,

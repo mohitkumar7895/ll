@@ -6,7 +6,7 @@ const { sendEmail } = require("../utils/email");
 const { calculateTotalHours, getAttendanceDate, getTodayAttendanceRecords } = require("../utils/attendance");
 
 const populateAttendanceQuery = (query) =>
-  query.populate("seat", "seatNumber seatType").populate("student", "name email studentId rollNo");
+  query.populate("seat", "seatNumber seatType").populate("student", "name email studentId");
 
 const findTodayAttendance = async (studentId, attendanceDate) =>
   populateAttendanceQuery(

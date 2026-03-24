@@ -77,6 +77,9 @@ const DashboardLayout = ({ title, subtitle, children }) => {
                 <NavLink to="/admin/payments" className={linkClass}>
                   Payments
                 </NavLink>
+                <NavLink to="/admin/cash-booking" className={linkClass}>
+                  Cash booking
+                </NavLink>
                 <NavLink to="/admin/students" className={linkClass}>
                   Students
                 </NavLink>

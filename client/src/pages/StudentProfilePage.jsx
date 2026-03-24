@@ -14,8 +14,6 @@ const StudentProfilePage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: "",
-    rollNo: "",
-    course: "",
     phone: "",
     email: "",
     password: "",
@@ -29,8 +27,6 @@ const StudentProfilePage = () => {
     setForm((f) => ({
       ...f,
       name: user.name || "",
-      rollNo: user.rollNo || "",
-      course: user.course || "",
       phone: user.phone || "",
       email: user.email || "",
       password: "",
@@ -52,8 +48,6 @@ const StudentProfilePage = () => {
     try {
       const fd = new FormData();
       fd.append("name", form.name.trim());
-      fd.append("rollNo", form.rollNo.trim());
-      fd.append("course", (form.course || "").trim());
       fd.append("phone", form.phone.trim());
       fd.append("email", form.email.trim().toLowerCase());
       if (form.password && form.password.length >= 6) {
@@ -124,20 +118,6 @@ const StudentProfilePage = () => {
                 Full name
               </label>
               <input id="name" name="name" value={form.name} onChange={handleChange} required className={inputClass} />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500" htmlFor="rollNo">
-                  Roll no.
-                </label>
-                <input id="rollNo" name="rollNo" value={form.rollNo} onChange={handleChange} required className={inputClass} />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500" htmlFor="course">
-                  Course
-                </label>
-                <input id="course" name="course" value={form.course} onChange={handleChange} className={inputClass} />
-              </div>
             </div>
             <div>
               <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500" htmlFor="phone">

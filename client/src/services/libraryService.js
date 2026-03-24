@@ -44,3 +44,6 @@ export const checkIn = async () => (await api.post("/attendance/check-in")).data
 export const checkOut = async () => (await api.post("/attendance/check-out")).data;
 export const createSeat = async (payload) => (await api.post("/seats", payload)).data;
 export const bulkCreateSeats = async (payload) => (await api.post("/seats/bulk", payload)).data;
+/** Admin — body `{ seatIds: string[] }` — only available seats without booking link are removed. */
+export const bulkDeleteSeats = async (payload) => (await api.post("/seats/bulk-delete", payload)).data;
+export const deleteSeat = async (seatId) => (await api.delete("/seats/" + seatId)).data;

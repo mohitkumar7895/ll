@@ -1,28 +1,53 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import DashboardLayout from "../layouts/DashboardLayout";
 import StatCard from "../components/StatCard";
-import { bulkCreateSeats, createSeat, fetchAdminDashboard, fetchBookings } from "../services/libraryService";
+import {
+  bulkCreateSeats,
+  bulkDeleteSeats,
+  createSeat,
+  deleteSeat,
+  fetchAdminDashboard,
+  fetchBookings,
+  fetchSeats,
+} from "../services/libraryService";
 import { getSocket } from "../services/socket";
 import { formatCurrency, formatTime } from "../utils/format";
 
-const defaultSeatForm = { seatNumber: "", seatType: "Regular" };
-const defaultBulkForm = { count: 100, seatType: "Regular", prefix: "S" };
+const defaultSeatForm = { seatNumber: "" };
+const defaultBulkForm = { count: 10, prefix: "S" };
 
 const AdminDashboard = () => {
   const [dashboard, setDashboard] = useState(null);
   const [bookings, setBookings] = useState([]);
+  const [seats, setSeats] = useState([]);
   const [seatForm, setSeatForm] = useState(defaultSeatForm);
   const [bulkForm, setBulkForm] = useState(defaultBulkForm);
   const [submitting, setSubmitting] = useState("");
+  const [selectedSeatIds, setSelectedSeatIds] = useState([]);
+
+  const deletableSeats = useMemo(
+    () => seats.filter((s) => s.status === "available" && !s.activeBooking),
+    [seats]
+  );
+  const deletableIdSet = useMemo(() => new Set(deletableSeats.map((s) => String(s._id))), [deletableSeats]);
+
+  useEffect(() => {
+    setSelectedSeatIds((prev) => prev.filter((id) => deletableIdSet.has(id)));
+  }, [deletableIdSet]);
 
   const loadDashboard = useCallback(async () => {
     try {
-      const [dashboardResponse, bookingsResponse] = await Promise.all([fetchAdminDashboard(), fetchBookings()]);
+      const [dashboardResponse, bookingsResponse, seatResponse] = await Promise.all([
+        fetchAdminDashboard(),
+        fetchBookings(),
+        fetchSeats(),
+      ]);
 
       setDashboard(dashboardResponse);
       setBookings(bookingsResponse.bookings);
+      setSeats(seatResponse.seats || []);
     } catch (error) {
       toast.error(String(error));
     }
@@ -76,6 +101,63 @@ const AdminDashboard = () => {
       await bulkCreateSeats({ ...bulkForm, count: Number(bulkForm.count) });
       toast.success("Bulk seats created successfully");
       setBulkForm(defaultBulkForm);
+      await loadDashboard();
+    } catch (error) {
+      toast.error(String(error));
+    } finally {
+      setSubmitting("");
+    }
+  };
+
+  const toggleSeatSelected = (id) => {
+    const idStr = String(id);
+    setSelectedSeatIds((prev) => (prev.includes(idStr) ? prev.filter((x) => x !== idStr) : [...prev, idStr]));
+  };
+
+  const toggleSelectAllDeletable = () => {
+    const ids = deletableSeats.map((s) => String(s._id));
+    const allSelected = ids.length > 0 && ids.every((id) => selectedSeatIds.includes(id));
+    if (allSelected) {
+      setSelectedSeatIds((prev) => prev.filter((id) => !ids.includes(id)));
+    } else {
+      setSelectedSeatIds((prev) => [...new Set([...prev, ...ids])]);
+    }
+  };
+
+  const handleBulkDeleteSelected = async () => {
+    const toSend = selectedSeatIds.filter((id) => deletableIdSet.has(id));
+    if (!toSend.length) {
+      toast.error("Tick free seats first — only available seats can be deleted.");
+      return;
+    }
+    if (!window.confirm("Delete " + toSend.length + " seat(s) at once? Only free seats will be removed.")) {
+      return;
+    }
+    setSubmitting("bulk-delete");
+    try {
+      const res = await bulkDeleteSeats({ seatIds: toSend });
+      toast.success(res.message || res.deletedCount + " seat(s) deleted");
+      if (res.skipped?.length) {
+        toast(res.skipped.length + " skipped (in use or reserved)", { duration: 4500 });
+      }
+      setSelectedSeatIds([]);
+      await loadDashboard();
+    } catch (error) {
+      toast.error(String(error));
+    } finally {
+      setSubmitting("");
+    }
+  };
+
+  const handleDeleteSeat = async (seatId) => {
+    if (!window.confirm("Delete this seat? Only works if the seat is free.")) {
+      return;
+    }
+    setSubmitting("delete-" + seatId);
+    try {
+      await deleteSeat(seatId);
+      toast.success("Seat removed");
+      setSelectedSeatIds((prev) => prev.filter((x) => x !== String(seatId)));
       await loadDashboard();
     } catch (error) {
       toast.error(String(error));
@@ -147,7 +229,7 @@ const AdminDashboard = () => {
         >
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-lime-100/90">Desk</p>
           <h3 className="mt-2 font-display text-xl font-bold">Cash seat booking</h3>
-          <p className="mt-2 text-sm text-lime-100/90">Cash turant received — seat book + receipt.</p>
+          <p className="mt-2 text-sm text-lime-100/90">Cash recorded immediately — book seat + receipt.</p>
           <span className="mt-4 inline-flex text-sm font-bold text-white group-hover:underline">Open page →</span>
         </Link>
         <Link
@@ -174,16 +256,6 @@ const AdminDashboard = () => {
                 placeholder="Seat number, e.g. A-101"
                 className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-indigo-400"
               />
-              <select
-                name="seatType"
-                value={seatForm.seatType}
-                onChange={handleSeatInput}
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-indigo-400"
-              >
-                {['Regular', 'AC', 'Silent', 'Group'].map((type) => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
               <button
                 type="submit"
                 disabled={submitting === "single"}
@@ -209,19 +281,9 @@ const AdminDashboard = () => {
                 name="prefix"
                 value={bulkForm.prefix}
                 onChange={handleBulkInput}
-                placeholder="Prefix"
+                placeholder="Prefix (e.g. S → S-001, S-002…)"
                 className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-indigo-400"
               />
-              <select
-                name="seatType"
-                value={bulkForm.seatType}
-                onChange={handleBulkInput}
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-indigo-400"
-              >
-                {['Regular', 'AC', 'Silent', 'Group'].map((type) => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
               <button
                 type="submit"
                 disabled={submitting === "bulk"}
@@ -230,6 +292,96 @@ const AdminDashboard = () => {
                 {submitting === "bulk" ? "Generating..." : "Generate Seats"}
               </button>
             </form>
+          </section>
+
+          <section className="rounded-3xl bg-white p-6 shadow-xl shadow-slate-200/50">
+            <h2 className="text-2xl font-bold text-slate-900">Manage seats</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Delete only works when the seat is <span className="font-semibold text-emerald-700">available</span> (not reserved or occupied). Tick
+              multiple free seats, then <span className="font-semibold">Delete selected</span> to remove them all at once.
+            </p>
+            {seats.length > 0 && (
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleBulkDeleteSelected}
+                  disabled={
+                    submitting === "bulk-delete" ||
+                    !selectedSeatIds.some((id) => deletableIdSet.has(id)) ||
+                    submitting.startsWith("delete-")
+                  }
+                  className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  {submitting === "bulk-delete"
+                    ? "Deleting…"
+                    : "Delete selected (" +
+                      selectedSeatIds.filter((id) => deletableIdSet.has(id)).length +
+                      ")"}
+                </button>
+                <span className="text-xs text-slate-500">
+                  {deletableSeats.length} free seat(s) — use checkboxes to multi-select
+                </span>
+              </div>
+            )}
+            <div className="mt-4 max-h-64 overflow-y-auto rounded-2xl border border-slate-200">
+              {seats.length ? (
+                <table className="w-full text-left text-sm text-slate-600">
+                  <thead className="sticky top-0 bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+                    <tr>
+                      <th className="w-10 px-2 py-2">
+                        <input
+                          type="checkbox"
+                          aria-label="Select all free seats"
+                          checked={
+                            deletableSeats.length > 0 &&
+                            deletableSeats.every((s) => selectedSeatIds.includes(String(s._id)))
+                          }
+                          onChange={toggleSelectAllDeletable}
+                          disabled={!deletableSeats.length || submitting === "bulk-delete"}
+                          className="h-4 w-4 rounded border-slate-300 bg-white text-indigo-600 focus:ring-indigo-500"
+                        />
+                      </th>
+                      <th className="px-3 py-2">Seat</th>
+                      <th className="px-3 py-2">Status</th>
+                      <th className="px-3 py-2 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {seats.map((seat) => {
+                      const canDelete = seat.status === "available" && !seat.activeBooking;
+                      return (
+                        <tr key={seat._id} className="border-t border-slate-100">
+                          <td className="px-2 py-2">
+                            <input
+                              type="checkbox"
+                              aria-label={"Select " + seat.seatNumber}
+                              checked={selectedSeatIds.includes(String(seat._id))}
+                              onChange={() => toggleSeatSelected(seat._id)}
+                              disabled={!canDelete || submitting === "bulk-delete"}
+                              className="h-4 w-4 rounded border-slate-300 bg-white text-indigo-600 focus:ring-indigo-500 disabled:opacity-40"
+                            />
+                          </td>
+                          <td className="px-3 py-2 font-semibold text-slate-800">{seat.seatNumber}</td>
+                          <td className="px-3 py-2 capitalize">{seat.status}</td>
+                          <td className="px-3 py-2 text-right">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSeat(seat._id)}
+                              disabled={!canDelete || submitting.startsWith("delete-") || submitting === "bulk-delete"}
+                              className="rounded-lg px-2 py-1 text-xs font-bold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="px-4 py-4 text-sm text-slate-500">No seats yet — add one above or generate a batch.</p>
+              )}
+            </div>
           </section>
 
           <section className="rounded-3xl bg-white p-6 shadow-xl shadow-slate-200/50">

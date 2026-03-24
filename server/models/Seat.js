@@ -10,8 +10,8 @@ const seatSchema = new mongoose.Schema(
     },
     seatType: {
       type: String,
-      enum: ["Regular", "AC", "Silent", "Group"],
-      default: "Regular",
+      trim: true,
+      default: "",
     },
     status: {
       type: String,

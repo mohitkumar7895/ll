@@ -44,8 +44,6 @@ const SeatBookingPage = () => {
   const [durationKey, setDurationKey] = useState("full-day");
   const [loading, setLoading] = useState(true);
   const [bookingAction, setBookingAction] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [paymentMode, setPaymentMode] = useState("online");
 
   const loadData = useCallback(async () => {
     try {
@@ -81,11 +79,6 @@ const SeatBookingPage = () => {
 
   const selectedPlan = useMemo(() => durations.find((duration) => duration.key === durationKey) || durations[0], [durationKey]);
 
-  const filteredSeats = useMemo(() => {
-    if (typeFilter === "all") return seats;
-    return seats.filter((s) => s.seatType === typeFilter);
-  }, [seats, typeFilter]);
-
   const handleBookSeat = async () => {
     if (!seats.length) {
       toast.error("No seats available right now. Ask admin to create seats.");
@@ -106,7 +99,7 @@ const SeatBookingPage = () => {
     try {
       const configResponse = await fetchPaymentConfig();
       if (!configResponse.key) {
-        throw new Error("Razorpay key missing hai. Server .env me RAZORPAY_KEY_ID add karo.");
+        throw new Error("Razorpay key is missing. Add RAZORPAY_KEY_ID to the server .env file.");
       }
 
       await loadRazorpayScript();
@@ -204,7 +197,7 @@ const SeatBookingPage = () => {
             <div className="min-w-0">
               <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-cyan-300/90">Live floor</p>
               <h2 className="mt-2 text-xl font-extrabold leading-snug sm:text-2xl md:text-3xl">
-                100 seats. One tap. Instant reserve.
+                Pick a free seat. One tap. Instant reserve.
               </h2>
             </div>
             <Link
@@ -219,28 +212,9 @@ const SeatBookingPage = () => {
         <div className="grid min-w-0 gap-6 xl:grid-cols-[1.25fr_0.75fr]">
           <section className="min-w-0 overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white shadow-xl shadow-slate-300/20">
             <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 via-indigo-50/30 to-fuchsia-50/20 px-5 py-4 sm:px-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">Seat map</h2>
-                  <p className="text-xs text-slate-500">Corner badge: R Regular · A AC · S Silent · G Group</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {["all", "Regular", "AC", "Silent", "Group"].map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setTypeFilter(t)}
-                      className={
-                        "rounded-full px-3 py-1.5 text-xs font-bold transition " +
-                        (typeFilter === t
-                          ? "bg-slate-900 text-white shadow-md"
-                          : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50")
-                      }
-                    >
-                      {t === "all" ? "All types" : t}
-                    </button>
-                  ))}
-                </div>
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Seat map</h2>
+                <p className="mt-1 text-xs text-slate-500">Green = free · amber = held · red = busy</p>
               </div>
               <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
                 {[
@@ -264,10 +238,10 @@ const SeatBookingPage = () => {
                   <p className="text-sm font-medium text-slate-500">Loading seat map…</p>
                 </div>
               ) : seats.length ? (
-                <SeatGrid seats={filteredSeats} selectedSeatId={selectedSeat?._id} onSelect={setSelectedSeat} />
+                <SeatGrid seats={seats} selectedSeatId={selectedSeat?._id} onSelect={setSelectedSeat} />
               ) : (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">
-                  No seats yet. Ask admin to add seats or restart the server to seed defaults.
+                  No seats yet. Ask admin to add seats from the admin dashboard.
                 </div>
               )}
             </div>
@@ -285,12 +259,13 @@ const SeatBookingPage = () => {
                     <div>
                       <p className="text-xs font-bold uppercase tracking-widest text-indigo-600">Selected</p>
                       <p className="mt-1 text-2xl font-black text-slate-900">{selectedSeat.seatNumber}</p>
-                      <p className="mt-1 text-sm font-medium text-slate-600">{selectedSeat.seatType} seat</p>
                     </div>
                     <span className="rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow-md">Ready</span>
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500">Map se koi <span className="font-semibold text-emerald-700">free</span> seat chunein.</p>
+                  <p className="text-sm text-slate-500">
+                    Pick a <span className="font-semibold text-emerald-700">free</span> seat on the map.
+                  </p>
                 )}
               </div>
 
@@ -326,7 +301,7 @@ const SeatBookingPage = () => {
                   <span className="text-lg font-black text-indigo-700">{formatCurrency(selectedPlan.amount)}</span>
                 </div>
                 <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
-                  Razorpay se payment verify hone ke baad seat confirm ho jayegi.
+                  After Razorpay verifies your payment, your seat will be confirmed.
                 </p>
               </div>
 
@@ -354,8 +329,7 @@ const SeatBookingPage = () => {
                       {activeBooking.status}
                     </span>
                   </div>
-                  <p className="mt-2 text-slate-600">{activeBooking.seat?.seatType}</p>
-                  <p className="mt-1 text-xs text-slate-500">{activeBooking.durationLabel}</p>
+                  <p className="mt-2 text-xs text-slate-500">{activeBooking.durationLabel}</p>
                   <p className="mt-3 text-xs font-medium text-slate-600">Ends {formatDateTime(activeBooking.endTime)}</p>
                   <button
                     type="button"
@@ -367,7 +341,7 @@ const SeatBookingPage = () => {
                   </button>
                 </div>
               ) : (
-                <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">Koi active booking nahi — map se book karein.</p>
+                <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">No active booking — book a seat from the map.</p>
               )}
             </section>
           </div>

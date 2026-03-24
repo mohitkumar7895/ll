@@ -195,8 +195,7 @@ const StudentDashboard = () => {
                 {activeBooking ? (
                   <ul className="mt-3 space-y-2 text-sm text-slate-700">
                     <li>
-                      <span className="font-semibold text-slate-900">{activeBooking.seat?.seatNumber}</span> ·{" "}
-                      {activeBooking.seat?.seatType}
+                      <span className="font-semibold text-slate-900">{activeBooking.seat?.seatNumber}</span>
                     </li>
                     <li className="capitalize text-slate-600">Status: {activeBooking.status}</li>
                     <li className="text-slate-500">Ends {formatDateTime(activeBooking.endTime)}</li>

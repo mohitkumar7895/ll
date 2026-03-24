@@ -76,7 +76,6 @@ const StudentBookingsPage = () => {
               <thead>
                 <tr className="border-b border-slate-100 bg-cyan-50/50 text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
                   <th className="px-5 py-4">Seat</th>
-                  <th className="px-5 py-4">Type</th>
                   <th className="px-5 py-4">Status</th>
                   <th className="px-5 py-4">Plan</th>
                   <th className="px-5 py-4">Ends</th>
@@ -85,7 +84,7 @@ const StudentBookingsPage = () => {
               <tbody className="text-slate-700">
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="px-5 py-12 text-center text-slate-500">
+                    <td colSpan={4} className="px-5 py-12 text-center text-slate-500">
                       Loading bookings…
                     </td>
                   </tr>
@@ -93,7 +92,6 @@ const StudentBookingsPage = () => {
                   bookings.map((booking) => (
                     <tr key={booking._id} className="border-b border-slate-100 transition hover:bg-cyan-50/20">
                       <td className="px-5 py-4 font-semibold text-slate-900">{booking.seat?.seatNumber}</td>
-                      <td className="px-5 py-4">{booking.seat?.seatType}</td>
                       <td className="px-5 py-4">
                         <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold capitalize">
                           {booking.status}
@@ -105,7 +103,7 @@ const StudentBookingsPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="px-5 py-12 text-center text-slate-500">
+                    <td colSpan={4} className="px-5 py-12 text-center text-slate-500">
                       No bookings yet.{" "}
                       <Link to="/student/seats" className="font-semibold text-cyan-700 underline">
                         Book a seat

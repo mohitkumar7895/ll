@@ -21,7 +21,6 @@ const AdminCashBookingPage = () => {
   const [durationKey, setDurationKey] = useState("full-day");
   const [loading, setLoading] = useState(true);
   const [bookingAction, setBookingAction] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
 
   const loadData = useCallback(async () => {
     try {
@@ -51,20 +50,15 @@ const AdminCashBookingPage = () => {
 
   const selectedPlan = useMemo(() => durations.find((d) => d.key === durationKey) || durations[0], [durationKey]);
 
-  const filteredSeats = useMemo(() => {
-    if (typeFilter === "all") return seats;
-    return seats.filter((s) => s.seatType === typeFilter);
-  }, [seats, typeFilter]);
-
   const selectedStudent = useMemo(() => students.find((s) => s._id === studentId), [students, studentId]);
 
   const handleBookCash = async () => {
     if (!studentId) {
-      toast.error("Pehle student chunein");
+      toast.error("Select a student first");
       return;
     }
     if (!selectedSeat) {
-      toast.error("Ek available seat chunein");
+      toast.error("Select an available seat");
       return;
     }
 
@@ -97,7 +91,7 @@ const AdminCashBookingPage = () => {
   return (
     <DashboardLayout
       title="Cash seat booking"
-      subtitle="Student + seat + plan — cash yahin record ho jata hai (Cash received). Pending step nahi."
+      subtitle="Student + seat + plan — cash is recorded here as Cash received. No pending step."
     >
       <div className="font-display min-w-0 space-y-6">
         <div className="relative overflow-hidden rounded-[2rem] border border-amber-500/20 bg-gradient-to-r from-amber-950 via-slate-900 to-slate-950 p-4 text-white shadow-xl sm:p-6 md:p-8">
@@ -119,23 +113,7 @@ const AdminCashBookingPage = () => {
           <section className="min-w-0 overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white shadow-xl shadow-slate-300/20">
             <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 via-amber-50/20 to-white px-5 py-4 sm:px-6">
               <h2 className="text-lg font-bold text-slate-900">Seat map</h2>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {["all", "Regular", "AC", "Silent", "Group"].map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTypeFilter(t)}
-                    className={
-                      "rounded-full px-3 py-1.5 text-xs font-bold transition " +
-                      (typeFilter === t
-                        ? "bg-slate-900 text-white shadow-md"
-                        : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50")
-                    }
-                  >
-                    {t === "all" ? "All types" : t}
-                  </button>
-                ))}
-              </div>
+              <p className="mt-1 text-xs text-slate-500">Green = free · amber = held · red = busy</p>
               <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
                 {[
                   ["Free", seatStats.available, "from-emerald-500 to-teal-600"],
@@ -158,7 +136,7 @@ const AdminCashBookingPage = () => {
                   <p className="text-sm font-medium text-slate-500">Loading…</p>
                 </div>
               ) : seats.length ? (
-                <SeatGrid seats={filteredSeats} selectedSeatId={selectedSeat?._id} onSelect={setSelectedSeat} />
+                <SeatGrid seats={seats} selectedSeatId={selectedSeat?._id} onSelect={setSelectedSeat} />
               ) : (
                 <p className="text-sm text-slate-500">No seats.</p>
               )}
@@ -168,7 +146,9 @@ const AdminCashBookingPage = () => {
           <div className="space-y-6">
             <section className="rounded-[1.75rem] border border-slate-200/80 bg-white p-6 shadow-xl">
               <h2 className="text-xl font-bold text-slate-900">Checkout (cash)</h2>
-              <p className="mt-1 text-sm text-slate-500">Cash turant &quot;received&quot; save hoga — Payments mein Cash received dikhega.</p>
+              <p className="mt-1 text-sm text-slate-500">
+                Cash is saved as &quot;received&quot; immediately — it appears as Cash received under Payments.
+              </p>
 
               <label className="mt-5 block text-xs font-bold uppercase tracking-wider text-slate-400">Student</label>
               <select
@@ -176,7 +156,7 @@ const AdminCashBookingPage = () => {
                 onChange={(e) => setStudentId(e.target.value)}
                 className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900"
               >
-                <option value="">— Student chunein —</option>
+                <option value="">— Select a student —</option>
                 {students.map((s) => (
                   <option key={s._id} value={s._id}>
                     {s.name} · {s.studentId || s.email}
@@ -190,10 +170,9 @@ const AdminCashBookingPage = () => {
                   <div>
                     <p className="text-xs font-bold uppercase text-amber-800">Seat</p>
                     <p className="text-2xl font-black text-slate-900">{selectedSeat.seatNumber}</p>
-                    <p className="text-sm text-slate-600">{selectedSeat.seatType}</p>
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-600">Map se seat chunein.</p>
+                  <p className="text-sm text-slate-600">Choose a seat on the map.</p>
                 )}
               </div>
 

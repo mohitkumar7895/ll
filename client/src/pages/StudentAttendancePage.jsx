@@ -161,7 +161,6 @@ const LibraryAttendanceCard = ({ entry }) => (
       <div>
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{entry.attendanceDate}</p>
         <h3 className="mt-1 text-lg font-bold text-slate-900">{entry.seat?.seatNumber || "No seat"}</h3>
-        <p className="text-xs text-slate-500">{entry.seat?.seatType}</p>
         <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-600">Seat check-in</p>
       </div>
       <span

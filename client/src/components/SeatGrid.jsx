@@ -1,20 +1,3 @@
-const typeShort = (type) => {
-  const t = String(type || "");
-  if (t === "Regular") return "R";
-  if (t === "AC") return "A";
-  if (t === "Silent") return "S";
-  if (t === "Group") return "G";
-  return t.slice(0, 1).toUpperCase();
-};
-
-const typeAccent = (type) => {
-  const t = String(type || "");
-  if (t === "AC") return "bg-sky-500/90";
-  if (t === "Silent") return "bg-violet-500/90";
-  if (t === "Group") return "bg-amber-500/90";
-  return "bg-slate-500/80";
-};
-
 const statusConfig = {
   available: {
     cell: "border-emerald-400/50 bg-gradient-to-b from-emerald-50 to-emerald-100/80 text-emerald-900 shadow-sm shadow-emerald-900/5 hover:border-emerald-500 hover:shadow-md hover:shadow-emerald-500/15",
@@ -63,7 +46,7 @@ const SeatGrid = ({ seats, selectedSeatId, onSelect }) => {
                 key={seat._id}
                 type="button"
                 onClick={() => isAvailable && onSelect(seat)}
-                title={seat.seatNumber + " · " + seat.seatType + " · " + seat.status}
+                title={seat.seatNumber + " · " + seat.status}
                 className={
                   "relative flex min-h-[3.25rem] flex-col items-center justify-center rounded-xl border-2 px-1 py-2 text-center transition duration-150 " +
                   cfg.cell +
@@ -73,14 +56,6 @@ const SeatGrid = ({ seats, selectedSeatId, onSelect }) => {
                   (!isAvailable ? " cursor-not-allowed grayscale-[0.15]" : " active:scale-[0.98]")
                 }
               >
-                <span
-                  className={
-                    "absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-md text-[9px] font-black text-white shadow " +
-                    typeAccent(seat.seatType)
-                  }
-                >
-                  {typeShort(seat.seatType)}
-                </span>
                 <span className="max-w-full truncate px-0.5 text-[11px] font-bold leading-tight sm:text-xs">{seat.seatNumber}</span>
                 <span className={"mt-0.5 h-1 w-1 rounded-full " + cfg.dot} aria-hidden />
               </button>

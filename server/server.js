@@ -19,7 +19,9 @@ const seatRoutes = require("./routes/seatRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
-const paymentRoutes = require("./routes/paymentRoutes");
+const paymentRoutes = require("./routes/payment");
+const { createCashPayment } = require("./controllers/paymentController");
+const { protect, authorize } = require("./middleware/authMiddleware");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 const { getUploadBaseDir } = require("./utils/uploadPaths");
 const { initializeSocket } = require("./socket");
@@ -37,7 +39,13 @@ app.disable("etag");
  * Browser CORS allowlist (must match Origin header exactly; no trailing slash).
  * Do not throw from the cors origin callback — use callback(null, false) for disallowed origins.
  */
-const allowedOrigins = ["https://ll-blue-xi.vercel.app"];
+const allowedOrigins = [
+  "https://ll-blue-xi.vercel.app",
+  "http://localhost:5173",
+  "https://localhost:5173",
+  "http://127.0.0.1:5173",
+  "https://127.0.0.1:5173",
+];
 
 const corsAllowedMethods = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 const corsAllowedHeaders = "Content-Type, Authorization";
@@ -101,8 +109,24 @@ app.use("/api/seats", seatRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/payments", paymentRoutes);
+
+/**
+ * Cash booking — registered on `app` first so POST always matches (avoids Express 5 / sub-router edge cases).
+ * Also expose under `/api/payments/cash` for older clients.
+ */
+const cashPaymentLog = (req, res, next) => {
+  console.log("[POST /api/payment/cash] incoming", {
+    studentId: req.user?._id?.toString?.() || req.user?._id,
+    seatId: req.body?.seatId,
+    durationKey: req.body?.durationKey,
+  });
+  next();
+};
+app.post("/api/payment/cash", protect, authorize("student"), cashPaymentLog, createCashPayment);
+app.post("/api/payments/cash", protect, authorize("student"), cashPaymentLog, createCashPayment);
+
 app.use("/api/payment", paymentRoutes);
+app.use("/api/payments", paymentRoutes);
 
 /** Browsers hit these on the API host; avoid 404 spam in logs (Vercel / serverless). */
 app.get(["/favicon.ico", "/favicon.png"], (_req, res) => {

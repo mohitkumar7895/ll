@@ -126,13 +126,43 @@ const receiptCss = `
 }
 .r-status-badge {
   border-radius: 9999px;
-  background: rgba(52, 211, 153, 0.95);
   padding: 3px 8px;
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #0f172a;
+}
+.r-status-badge.r-sb-success {
+  background: rgba(52, 211, 153, 0.95);
+  color: #0f172a;
+}
+.r-status-badge.r-sb-paid {
+  background: rgba(52, 211, 153, 0.95);
+  color: #0f172a;
+}
+.r-status-badge.r-sb-pending {
+  background: #facc15;
+  color: #422006;
+}
+.r-slip-watermark.r-wm-pending span {
+  color: rgba(217, 119, 6, 0.11);
+}
+.r-cash-note {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-left: 4px solid #d97706;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #92400e;
+}
+.r-footer-extra {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #64748b;
 }
 .r-body {
   position: relative;
@@ -464,26 +494,36 @@ const ReceiptTemplate = forwardRef(function ReceiptTemplate({ data }, ref) {
     receiptId,
     razorpayPaymentId,
     razorpayOrderId,
-    paidAt,
+    displayDate,
     studentName,
     email,
     phone,
     courseServiceName,
     amountPaise,
-    paymentMethod,
-    statusLabel,
+    paymentMethodDisplay,
+    paymentStatusLine,
+    statusBadgeHeader,
+    statusBadgeModifier,
+    watermarkText,
+    watermarkClass,
+    showGatewayIds,
+    verifyLine1,
+    verifyLine2,
+    offlineNote,
+    amountFooterNote,
+    footerExtra,
   } = data;
 
-  const when = paidAt
-    ? new Date(paidAt).toLocaleString("en-IN", { dateStyle: "long", timeStyle: "short" })
+  const when = displayDate
+    ? new Date(displayDate).toLocaleString("en-IN", { dateStyle: "long", timeStyle: "short" })
     : "—";
 
   return (
     <div ref={ref} className="receipt-slip-root r-slip">
       <style type="text/css">{receiptCss}</style>
 
-      <div className="r-slip-watermark" aria-hidden>
-        <span>PAID</span>
+      <div className={"r-slip-watermark " + (watermarkClass || "r-wm-paid")} aria-hidden>
+        <span>{watermarkText}</span>
       </div>
 
       <div className="r-header">
@@ -501,7 +541,7 @@ const ReceiptTemplate = forwardRef(function ReceiptTemplate({ data }, ref) {
           <p className="r-subtitle">Payment receipt</p>
           <div className="r-status-pill">
             <span>Status</span>
-            <span className="r-status-badge">{statusLabel}</span>
+            <span className={"r-status-badge " + (statusBadgeModifier || "r-sb-success")}>{statusBadgeHeader}</span>
           </div>
         </div>
       </div>
@@ -523,15 +563,31 @@ const ReceiptTemplate = forwardRef(function ReceiptTemplate({ data }, ref) {
             <p>Transaction details</p>
           </div>
           <div className="r-card-body">
-            <Row label="Razorpay payment ID">
-              <span className="r-mono">{razorpayPaymentId || "—"}</span>
-            </Row>
-            <Row label="Order ID">
-              <span className="r-mono">{razorpayOrderId || "—"}</span>
+            <Row label="Payment status">
+              <span>{paymentStatusLine || "—"}</span>
             </Row>
             <Row label="Payment method">
-              <span>{paymentMethod || "—"}</span>
+              <span>{paymentMethodDisplay || "—"}</span>
             </Row>
+            {showGatewayIds ? (
+              <>
+                <Row label="Razorpay payment ID">
+                  <span className="r-mono">{razorpayPaymentId || "—"}</span>
+                </Row>
+                <Row label="Order ID">
+                  <span className="r-mono">{razorpayOrderId || "—"}</span>
+                </Row>
+              </>
+            ) : (
+              <>
+                <Row label="Razorpay payment ID">
+                  <span className="r-mono">—</span>
+                </Row>
+                <Row label="Order ID">
+                  <span className="r-mono">—</span>
+                </Row>
+              </>
+            )}
           </div>
         </div>
 
@@ -563,17 +619,20 @@ const ReceiptTemplate = forwardRef(function ReceiptTemplate({ data }, ref) {
           <div>
             <p className="r-amount-label">Amount paid</p>
             <p className="r-amount-sum">{formatCurrency(amountPaise)}</p>
-            <p className="r-amount-note">Inclusive of applicable taxes</p>
+            <p className="r-amount-note">{amountFooterNote || "Inclusive of applicable taxes"}</p>
           </div>
           <div className="r-amount-divider" />
           <div className="r-verify">
-            <p>Verified</p>
-            <p>Razorpay</p>
+            <p>{verifyLine1}</p>
+            <p>{verifyLine2}</p>
           </div>
         </div>
 
+        {offlineNote ? <div className="r-cash-note">{offlineNote}</div> : null}
+
         <footer className="r-footer">
           <p>Thank you for your payment</p>
+          {footerExtra ? <p className="r-footer-extra">{footerExtra}</p> : null}
           <p>This is a computer-generated receipt and does not require a signature.</p>
         </footer>
       </div>

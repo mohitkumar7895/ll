@@ -50,7 +50,7 @@ const getAdminDashboard = async (req, res) => {
         .limit(6),
       getTodayAttendanceRecords(attendanceDate),
       Payment.aggregate([
-        { $match: { status: "paid" } },
+        { $match: { status: { $in: ["paid", "ONLINE_SUCCESS", "CASH_RECEIVED"] } } },
         {
           $group: {
             _id: null,
@@ -128,7 +128,7 @@ const getStudentDashboard = async (req, res) => {
       { $group: { _id: null, totalHours: { $sum: "$totalHours" }, visits: { $sum: 1 } } },
     ]),
     Payment.aggregate([
-      { $match: { student: req.user._id, status: "paid" } },
+      { $match: { student: req.user._id, status: { $in: ["paid", "ONLINE_SUCCESS", "CASH_RECEIVED"] } } },
       {
         $group: {
           _id: null,

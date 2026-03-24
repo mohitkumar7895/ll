@@ -4,7 +4,15 @@ import toast from "react-hot-toast";
 import DashboardLayout from "../layouts/DashboardLayout";
 import SeatGrid from "../components/SeatGrid";
 import { useAuth } from "../context/useAuth";
-import { cancelBooking, createPaymentOrder, fetchBookings, fetchPaymentConfig, fetchSeats, verifyPayment } from "../services/libraryService";
+import {
+  cancelBooking,
+  createCashPayment,
+  createPaymentOrder,
+  fetchBookings,
+  fetchPaymentConfig,
+  fetchSeats,
+  verifyPayment,
+} from "../services/libraryService";
 import { getSocket } from "../services/socket";
 import { formatCurrency, formatDateTime } from "../utils/format";
 
@@ -45,6 +53,7 @@ const SeatBookingPage = () => {
   const [loading, setLoading] = useState(true);
   const [bookingAction, setBookingAction] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [paymentMode, setPaymentMode] = useState("online");
 
   const loadData = useCallback(async () => {
     try {
@@ -98,6 +107,24 @@ const SeatBookingPage = () => {
 
     if (!selectedSeat) {
       toast.error("Select an available seat first");
+      return;
+    }
+
+    if (paymentMode === "cash") {
+      setBookingAction("cash");
+      try {
+        const res = await createCashPayment({ seatId: selectedSeat._id, durationKey });
+        toast.success(res.message || "Seat reserved — pay cash at the desk");
+        await loadData();
+        navigate("/student/payment-success", {
+          state: { paymentId: res.payment?._id },
+          replace: false,
+        });
+      } catch (error) {
+        toast.error(String(error));
+      } finally {
+        setBookingAction("");
+      }
       return;
     }
 
@@ -194,7 +221,7 @@ const SeatBookingPage = () => {
   return (
     <DashboardLayout
       title="Pick your spot"
-      subtitle="Live grid — green free, amber held, red taken. Pay with Razorpay to lock it in."
+      subtitle="Live grid — green free, amber held, red taken. Pay online (Razorpay) or choose cash at the desk."
     >
       <div className="font-display min-w-0 space-y-6">
         <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/60 bg-gradient-to-r from-slate-900 via-indigo-950 to-fuchsia-950 p-4 text-white shadow-xl sm:p-6 md:p-8">
@@ -276,7 +303,7 @@ const SeatBookingPage = () => {
             <section className="relative overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white p-6 shadow-xl shadow-indigo-200/20">
               <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-indigo-400/10 blur-3xl" />
               <h2 className="relative text-xl font-bold text-slate-900">Checkout</h2>
-              <p className="relative mt-1 text-sm text-slate-500">Seat + plan + Razorpay. Seat tabhi lock hota hai jab payment pass ho.</p>
+              <p className="relative mt-1 text-sm text-slate-500">Seat + plan + payment. Online via Razorpay, or cash (reserved until you pay at desk).</p>
 
               <div className="relative mt-5 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-white p-5 ring-1 ring-indigo-100/50">
                 {selectedSeat ? (
@@ -325,8 +352,56 @@ const SeatBookingPage = () => {
                   <span className="text-lg font-black text-indigo-700">{formatCurrency(selectedPlan.amount)}</span>
                 </div>
                 <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
-                  Verify ke baad booking confirm — admin payment list me dekh sakta hai.
+                  {paymentMode === "online"
+                    ? "Online: Razorpay verify ke baad booking confirm."
+                    : "Cash: seat turant lock — receipt par pending dikhega jab tak desk par cash mile."}
                 </p>
+              </div>
+
+              <p className="relative mt-5 text-xs font-bold uppercase tracking-wider text-slate-400">Payment method</p>
+              <div className="relative mt-2 grid gap-2 sm:grid-cols-2">
+                <label
+                  className={
+                    "flex cursor-pointer items-center gap-3 rounded-2xl border-2 px-4 py-3 transition " +
+                    (paymentMode === "online"
+                      ? "border-indigo-600 bg-indigo-50 ring-2 ring-indigo-200/50"
+                      : "border-slate-200 bg-white hover:border-slate-300")
+                  }
+                >
+                  <input
+                    type="radio"
+                    name="paymentMode"
+                    value="online"
+                    checked={paymentMode === "online"}
+                    onChange={() => setPaymentMode("online")}
+                    className="h-4 w-4 accent-indigo-600"
+                  />
+                  <div>
+                    <span className="block text-sm font-bold text-slate-900">Pay online</span>
+                    <span className="text-xs text-slate-500">Razorpay</span>
+                  </div>
+                </label>
+                <label
+                  className={
+                    "flex cursor-pointer items-center gap-3 rounded-2xl border-2 px-4 py-3 transition " +
+                    (paymentMode === "cash"
+                      ? "border-amber-500 bg-amber-50 ring-2 ring-amber-200/50"
+                      : "border-slate-200 bg-white hover:border-slate-300")
+                  }
+                >
+                  <input
+                    type="radio"
+                    name="paymentMode"
+                    value="cash"
+                    checked={paymentMode === "cash"}
+                    onChange={() => setPaymentMode("cash")}
+                    className="h-4 w-4 accent-amber-600"
+                  />
+                  <div>
+                    <span className="block text-sm font-bold text-slate-900">Pay cash</span>
+                    <span className="text-xs text-slate-500">At desk</span>
+                  </div>
+                </label>
               </div>
 
               <button
@@ -335,7 +410,15 @@ const SeatBookingPage = () => {
                 disabled={Boolean(bookingAction) || !selectedSeat || Boolean(activeBooking)}
                 className="relative mt-5 w-full rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-700 px-4 py-4 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 transition hover:from-indigo-500 hover:to-violet-600 disabled:cursor-not-allowed disabled:opacity-45"
               >
-                {bookingAction === "payment" ? "Opening Razorpay…" : bookingAction === "verify" ? "Verifying…" : "Pay & lock seat"}
+                {bookingAction === "cash"
+                  ? "Reserving seat…"
+                  : bookingAction === "payment"
+                    ? "Opening Razorpay…"
+                    : bookingAction === "verify"
+                      ? "Verifying…"
+                      : paymentMode === "cash"
+                        ? "Reserve & get receipt"
+                        : "Pay & lock seat"}
               </button>
             </section>
 

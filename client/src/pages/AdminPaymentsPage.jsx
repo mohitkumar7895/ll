@@ -2,20 +2,48 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import DashboardLayout from "../layouts/DashboardLayout";
-import { fetchPayments } from "../services/libraryService";
+import { fetchPayments, markCashPaymentPaid } from "../services/libraryService";
 import { getSocket } from "../services/socket";
 import { formatCurrency, formatDateTime } from "../utils/format";
+import { isReceiptAvailable } from "../utils/paymentDisplay";
+
+const CATEGORY_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: "online", label: "Online" },
+  { value: "cash_pending", label: "Cash pending" },
+  { value: "cash_received", label: "Cash received" },
+];
+
+const statusBadgeClass = (status, method) => {
+  if (status === "CASH_PENDING") return "bg-amber-100 text-amber-900 ring-amber-200";
+  if (status === "CASH_RECEIVED" || method === "CASH") return "bg-sky-100 text-sky-900 ring-sky-200";
+  if (status === "ONLINE_SUCCESS" || status === "paid") return "bg-emerald-100 text-emerald-900 ring-emerald-200";
+  if (status === "created") return "bg-slate-100 text-slate-800 ring-slate-200";
+  if (status === "failed") return "bg-rose-100 text-rose-900 ring-rose-200";
+  return "bg-slate-100 text-slate-800 ring-slate-200";
+};
+
+const statusLabel = (p) => {
+  const m = p.paymentMethod;
+  if (p.status === "ONLINE_SUCCESS" || (p.status === "paid" && m !== "CASH")) return "Online paid";
+  if (p.status === "CASH_PENDING") return "Cash pending";
+  if (p.status === "CASH_RECEIVED") return "Cash received";
+  return p.status;
+};
 
 const AdminPaymentsPage = () => {
   const [payments, setPayments] = useState([]);
   const [stats, setStats] = useState({ totalPayments: 0, successfulPayments: 0, totalRevenue: 0 });
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [category, setCategory] = useState("all");
   const [query, setQuery] = useState("");
+  const [markingId, setMarkingId] = useState("");
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await fetchPayments();
+      const params = category === "all" ? {} : { category };
+      const res = await fetchPayments(params);
       setPayments(res.payments || []);
       setStats(res.stats || { totalPayments: 0, successfulPayments: 0, totalRevenue: 0 });
     } catch (e) {
@@ -23,7 +51,7 @@ const AdminPaymentsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [category]);
 
   useEffect(() => {
     load();
@@ -38,19 +66,32 @@ const AdminPaymentsPage = () => {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return payments.filter((p) => {
-      if (statusFilter !== "all" && p.status !== statusFilter) return false;
       if (!q) return true;
       const name = p.student?.name?.toLowerCase() || "";
       const email = p.student?.email?.toLowerCase() || "";
       const pid = (p.razorpayPaymentId || "").toLowerCase();
-      return name.includes(q) || email.includes(q) || pid.includes(q);
+      const rid = (p.receiptId || "").toLowerCase();
+      return name.includes(q) || email.includes(q) || pid.includes(q) || rid.includes(q);
     });
-  }, [payments, statusFilter, query]);
+  }, [payments, query]);
+
+  const handleMarkPaid = async (paymentId) => {
+    setMarkingId(paymentId);
+    try {
+      await markCashPaymentPaid(paymentId);
+      toast.success("Marked as cash received");
+      await load();
+    } catch (e) {
+      toast.error(String(e));
+    } finally {
+      setMarkingId("");
+    }
+  };
 
   return (
     <DashboardLayout
       title="Payments"
-      subtitle="Every Razorpay transaction — revenue, plans, and payout-ready IDs in one view."
+      subtitle="Online (Razorpay) and cash — filter, receipts, mark cash as received."
     >
       <div className="font-display min-w-0">
         <div className="relative overflow-hidden rounded-[2rem] border border-amber-500/25 bg-gradient-to-br from-amber-950 via-slate-900 to-slate-950 p-5 text-white shadow-2xl shadow-amber-900/25 sm:p-8 md:p-10">
@@ -60,7 +101,7 @@ const AdminPaymentsPage = () => {
               <p className="text-xs font-semibold uppercase tracking-[0.35em] text-amber-200/90">Treasury</p>
               <h2 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl">All payments</h2>
               <p className="mt-3 max-w-xl text-sm text-slate-300">
-                Filter by status, search student or Razorpay ID. Totals update when new payments verify.
+                Green = paid online, amber = cash pending, blue tint = cash. Mark pending rows when cash is collected.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -84,19 +125,19 @@ const AdminPaymentsPage = () => {
 
         <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2">
-            {["all", "paid", "created", "failed", "cancelled"].map((s) => (
+            {CATEGORY_OPTIONS.map((opt) => (
               <button
-                key={s}
+                key={opt.value}
                 type="button"
-                onClick={() => setStatusFilter(s)}
+                onClick={() => setCategory(opt.value)}
                 className={
                   "rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider transition " +
-                  (statusFilter === s
+                  (category === opt.value
                     ? "bg-slate-900 text-white shadow-lg"
                     : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50")
                 }
               >
-                {s}
+                {opt.label}
               </button>
             ))}
           </div>
@@ -104,7 +145,7 @@ const AdminPaymentsPage = () => {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search student, email, payment ID…"
+            placeholder="Search student, email, receipt ID…"
             className="w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 sm:w-96 sm:text-sm"
           />
         </div>
@@ -117,17 +158,19 @@ const AdminPaymentsPage = () => {
                   <th className="px-5 py-4">Student</th>
                   <th className="px-5 py-4">Seat</th>
                   <th className="px-5 py-4">Plan</th>
+                  <th className="px-5 py-4">Method</th>
                   <th className="px-5 py-4">Amount</th>
                   <th className="px-5 py-4">Status</th>
                   <th className="px-5 py-4">Paid at</th>
-                  <th className="px-5 py-4">Payment ID</th>
+                  <th className="px-5 py-4">Gateway ID</th>
                   <th className="px-5 py-4">Receipt</th>
+                  <th className="px-5 py-4">Action</th>
                 </tr>
               </thead>
               <tbody className="text-slate-700">
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="px-5 py-12 text-center text-slate-500">
+                    <td colSpan={10} className="px-5 py-12 text-center text-slate-500">
                       Loading payments…
                     </td>
                   </tr>
@@ -140,22 +183,36 @@ const AdminPaymentsPage = () => {
                       </td>
                       <td className="px-5 py-4 font-medium">{payment.seat?.seatNumber || payment.seatNumber || "—"}</td>
                       <td className="px-5 py-4">{payment.durationLabel}</td>
+                      <td className="px-5 py-4">
+                        <span
+                          className={
+                            "inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-bold ring-1 " +
+                            (payment.paymentMethod === "CASH" ? "bg-sky-50 text-sky-900 ring-sky-200" : "bg-indigo-50 text-indigo-900 ring-indigo-200")
+                          }
+                        >
+                          {payment.paymentMethod === "CASH" ? "Cash" : "Online"}
+                        </span>
+                      </td>
                       <td className="px-5 py-4 font-semibold tabular-nums text-slate-900">
                         {formatCurrency(payment.amount)}
                       </td>
                       <td className="px-5 py-4">
-                        <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold capitalize text-slate-800">
-                          {payment.status}
+                        <span
+                          className={
+                            "inline-flex rounded-full px-3 py-1 text-xs font-bold ring-1 " + statusBadgeClass(payment.status, payment.paymentMethod)
+                          }
+                        >
+                          {statusLabel(payment)}
                         </span>
                       </td>
                       <td className="px-5 py-4 text-xs tabular-nums text-slate-600">
                         {formatDateTime(payment.paidAt || payment.createdAt)}
                       </td>
-                      <td className="max-w-[140px] truncate px-5 py-4 font-mono text-xs text-slate-600">
+                      <td className="max-w-[120px] truncate px-5 py-4 font-mono text-xs text-slate-600">
                         {payment.razorpayPaymentId || "—"}
                       </td>
                       <td className="px-5 py-4">
-                        {payment.status === "paid" ? (
+                        {isReceiptAvailable(payment.status) ? (
                           <Link
                             to={"/admin/receipt/" + payment._id}
                             className="font-bold text-amber-800 underline-offset-2 hover:underline"
@@ -166,11 +223,25 @@ const AdminPaymentsPage = () => {
                           "—"
                         )}
                       </td>
+                      <td className="px-5 py-4">
+                        {payment.status === "CASH_PENDING" ? (
+                          <button
+                            type="button"
+                            disabled={markingId === payment._id}
+                            onClick={() => handleMarkPaid(payment._id)}
+                            className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-500 disabled:opacity-50"
+                          >
+                            {markingId === payment._id ? "…" : "Mark as paid"}
+                          </button>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={8} className="px-5 py-12 text-center text-slate-500">
+                    <td colSpan={10} className="px-5 py-12 text-center text-slate-500">
                       No payments match your filters.
                     </td>
                   </tr>

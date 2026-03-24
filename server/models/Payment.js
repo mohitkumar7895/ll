@@ -46,7 +46,15 @@ const paymentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["created", "paid", "failed", "cancelled"],
+      enum: [
+        "created",
+        "failed",
+        "cancelled",
+        "paid",
+        "ONLINE_SUCCESS",
+        "CASH_PENDING",
+        "CASH_RECEIVED",
+      ],
       default: "created",
     },
     razorpayOrderId: {
@@ -101,10 +109,11 @@ const paymentSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    /** ONLINE = Razorpay; CASH = offline collection */
     paymentMethod: {
       type: String,
-      trim: true,
-      default: "Razorpay",
+      enum: ["ONLINE", "CASH", "Razorpay"],
+      default: "ONLINE",
     },
     companyName: {
       type: String,
@@ -120,14 +129,14 @@ const paymentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-paymentSchema.pre("save", function (next) {
+/** Mongoose 9+ — `next` is not always passed to sync hooks; use async or return Promise. */
+paymentSchema.pre("save", async function () {
   if (this.student && !this.userId) {
     this.userId = this.student;
   }
   if (this.userId && !this.student) {
     this.student = this.userId;
   }
-  next();
 });
 
 module.exports = mongoose.model("Payment", paymentSchema);

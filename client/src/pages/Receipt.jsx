@@ -10,9 +10,55 @@ import { useAuth } from "../context/useAuth";
 const buildReceiptData = (payment) => {
   const st = payment.student;
   const seat = payment.seat;
+  const status = payment.status;
   const fallbackCourse =
     payment.courseServiceName ||
     [seat?.seatNumber ? "Seat " + seat.seatNumber : null, payment.durationLabel].filter(Boolean).join(" · ");
+
+  const displayDate = payment.paidAt || payment.createdAt;
+
+  let watermarkText = "PAID";
+  let watermarkClass = "r-wm-paid";
+  let statusBadgeHeader = "SUCCESS";
+  let statusBadgeModifier = "r-sb-success";
+  let paymentStatusLine = "";
+  let paymentMethodDisplay = "Online";
+  let showGatewayIds = true;
+  let verifyLine1 = "Verified";
+  let verifyLine2 = "Razorpay";
+  let offlineNote = null;
+  let amountFooterNote = "Inclusive of applicable taxes";
+  let footerExtra = null;
+
+  if (status === "CASH_PENDING") {
+    watermarkText = "PENDING";
+    watermarkClass = "r-wm-pending";
+    statusBadgeHeader = "PENDING";
+    statusBadgeModifier = "r-sb-pending";
+    paymentStatusLine = "Pending — cash to be collected offline";
+    paymentMethodDisplay = "Cash";
+    showGatewayIds = false;
+    verifyLine1 = "Pending";
+    verifyLine2 = "Cash";
+    offlineNote = "Payment to be collected offline";
+    amountFooterNote = "Payable offline";
+  } else if (status === "CASH_RECEIVED") {
+    paymentStatusLine = "Paid — payment received in cash";
+    paymentMethodDisplay = "Cash";
+    showGatewayIds = false;
+    verifyLine1 = "Received";
+    verifyLine2 = "Cash";
+    statusBadgeHeader = "PAID";
+    statusBadgeModifier = "r-sb-paid";
+    footerExtra = "Payment received in cash";
+  } else if (status === "ONLINE_SUCCESS" || status === "paid") {
+    paymentStatusLine = "Paid — online (Razorpay)";
+    paymentMethodDisplay = "Online";
+    statusBadgeModifier = "r-sb-success";
+    footerExtra = null;
+  } else {
+    paymentStatusLine = String(status || "—");
+  }
 
   return {
     companyName: payment.companyName || "Library Hub",
@@ -20,14 +66,24 @@ const buildReceiptData = (payment) => {
     receiptId: payment.receiptId || "REC-" + String(payment._id).slice(-8).toUpperCase(),
     razorpayPaymentId: payment.razorpayPaymentId,
     razorpayOrderId: payment.razorpayOrderId,
-    paidAt: payment.paidAt || payment.createdAt,
+    displayDate,
     studentName: payment.nameSnapshot || st?.name || "—",
     email: payment.emailSnapshot || st?.email || "—",
     phone: payment.phone || st?.phone || "—",
     courseServiceName: fallbackCourse || "—",
     amountPaise: payment.amount,
-    paymentMethod: payment.paymentMethod || "Razorpay",
-    statusLabel: "SUCCESS",
+    paymentMethodDisplay,
+    paymentStatusLine,
+    statusBadgeHeader,
+    statusBadgeModifier,
+    watermarkText,
+    watermarkClass,
+    showGatewayIds,
+    verifyLine1,
+    verifyLine2,
+    offlineNote,
+    amountFooterNote,
+    footerExtra,
   };
 };
 
